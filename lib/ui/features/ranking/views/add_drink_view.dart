@@ -1,0 +1,589 @@
+import 'dart:typed_data';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:provider/provider.dart';
+import 'package:ranking_app/data/models/drink_model.dart';
+import 'package:ranking_app/ui/core/theme.dart';
+import '../../app_view_model.dart';
+
+class AddDrinkView extends StatefulWidget {
+  const AddDrinkView({super.key});
+
+  @override
+  State<AddDrinkView> createState() => _AddDrinkViewState();
+}
+
+class _AddDrinkViewState extends State<AddDrinkView> with SingleTickerProviderStateMixin {
+  Uint8List? _imageBytes;
+  
+  bool get _isMobile {
+    return defaultTargetPlatform == TargetPlatform.iOS ||
+           defaultTargetPlatform == TargetPlatform.android;
+  }
+  bool _isScanning = false;
+  bool _hasScanned = false;
+  String _errorMessage = '';
+
+  // Scan result controllers
+  final _formKey = GlobalKey<FormState>();
+  final _nameController = TextEditingController();
+  final _brandController = TextEditingController();
+  final _abvController = TextEditingController();
+  final _descriptionController = TextEditingController();
+  final _commentController = TextEditingController();
+  
+  String _selectedType = 'Lager';
+  double _rating = 5.0;
+
+  // Scanning laser animation
+  late AnimationController _animationController;
+  late Animation<double> _laserAnimation;
+
+  final List<String> _drinkTypes = [
+    'IPA',
+    'Lager',
+    'Stout',
+    'Pilsner',
+    'Cider',
+    'Sour Beer',
+    'Soda',
+    'Energy Drink',
+    'Juice',
+    'Water',
+    'Wine',
+    'Spirits',
+    'Other'
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 2),
+    );
+    _laserAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
+    )..addStatusListener((status) {
+        if (status == AnimationStatus.completed) {
+          _animationController.reverse();
+        } else if (status == AnimationStatus.dismissed) {
+          _animationController.forward();
+        }
+      });
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    _nameController.dispose();
+    _brandController.dispose();
+    _abvController.dispose();
+    _descriptionController.dispose();
+    _commentController.dispose();
+    super.dispose();
+  }
+
+  // Pick image helper
+  Future<void> _pickImage(ImageSource source) async {
+    setState(() {
+      _errorMessage = '';
+    });
+    
+    try {
+      final ImagePicker picker = ImagePicker();
+      final XFile? image = await picker.pickImage(
+        source: source,
+        maxWidth: 1024,
+        maxHeight: 1024,
+        imageQuality: 85,
+      );
+
+      if (image != null) {
+        final bytes = await image.readAsBytes();
+        setState(() {
+          _imageBytes = bytes;
+          _hasScanned = false;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Det gick inte att välja bild: $e';
+      });
+    }
+  }
+
+  // AI label scan runner
+  Future<void> _runLabelScan() async {
+    if (_imageBytes == null) return;
+
+    setState(() {
+      _isScanning = true;
+      _errorMessage = '';
+    });
+    _animationController.forward();
+
+    try {
+      final viewModel = Provider.of<AppViewModel>(context, listen: false);
+      final result = await viewModel.scanDrink(_imageBytes!);
+
+      setState(() {
+        _nameController.text = result['name'] ?? '';
+        _brandController.text = result['brand'] ?? '';
+        _descriptionController.text = result['description'] ?? '';
+        
+        final detectedType = result['type'] as String?;
+        if (detectedType != null && _drinkTypes.contains(detectedType)) {
+          _selectedType = detectedType;
+        } else {
+          _selectedType = 'Other';
+        }
+
+        final detectedAbv = result['abv'];
+        if (detectedAbv is num) {
+          _abvController.text = detectedAbv.toString();
+        } else {
+          _abvController.text = '0.0';
+        }
+
+        _isScanning = false;
+        _hasScanned = true;
+      });
+    } catch (e) {
+      setState(() {
+        _isScanning = false;
+        _errorMessage = e.toString().replaceAll('Exception: ', '');
+      });
+    } finally {
+      _animationController.stop();
+      _animationController.reset();
+    }
+  }
+
+  // Save the drink entry
+  Future<void> _saveDrink() async {
+    if (!_formKey.currentState!.validate()) return;
+    if (_imageBytes == null) return;
+
+    final abv = double.tryParse(_abvController.text) ?? 0.0;
+    
+    final newDrink = DrinkModel(
+      id: DateTime.now().microsecondsSinceEpoch.toString(),
+      name: _nameController.text.trim(),
+      brand: _brandController.text.trim(),
+      type: _selectedType,
+      abv: abv,
+      rating: _rating,
+      comment: _commentController.text.trim(),
+      imageBytes: _imageBytes,
+      scannedDescription: _descriptionController.text.trim(),
+      createdAt: DateTime.now(),
+    );
+
+    final viewModel = Provider.of<AppViewModel>(context, listen: false);
+    await viewModel.addDrink(newDrink);
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${newDrink.name} sparades framgångsrikt!'),
+          backgroundColor: AppTheme.ratingGreen,
+        ),
+      );
+      Navigator.pop(context);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final viewModel = Provider.of<AppViewModel>(context);
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Ranka Ny Dryck'),
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 10.0),
+        child: Center(
+          child: Container(
+            constraints: const BoxConstraints(maxWidth: 700),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                if (_errorMessage.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 16.0),
+                    child: Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: AppTheme.ratingRed.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: AppTheme.ratingRed.withOpacity(0.3)),
+                      ),
+                      child: Text(
+                        _errorMessage,
+                        style: const TextStyle(color: AppTheme.textPrimary, fontSize: 14),
+                      ),
+                    ),
+                  ),
+
+                // Step 1: Select/Take Photo Box
+                _buildPhotoSelectorBox(),
+                const SizedBox(height: 24),
+
+                if (_imageBytes != null && !_hasScanned && !_isScanning)
+                  ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppTheme.accentCyan,
+                      foregroundColor: AppTheme.darkBackground,
+                    ),
+                    onPressed: _runLabelScan,
+                    icon: const Icon(Icons.psychology),
+                    label: Text(
+                      viewModel.hasApiKey
+                          ? 'Analysera etikett med Gemini AI'
+                          : 'Kör test-analys (Demo)',
+                    ),
+                  ),
+
+                if (_isScanning)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 20.0),
+                    child: Column(
+                      children: [
+                        const CircularProgressIndicator(color: AppTheme.accentGold),
+                        const SizedBox(height: 12),
+                        Text(
+                          viewModel.hasApiKey
+                              ? 'Analyserar etiketten med Gemini AI...'
+                              : 'Simulerar skanning av flaska/burk...',
+                          style: const TextStyle(color: AppTheme.accentGold, fontWeight: FontWeight.bold),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                // Step 2: Input forms and rank sliders (Only show once scanned/skipped)
+                if (_hasScanned && !_isScanning) ...[
+                  Form(
+                    key: _formKey,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        const SizedBox(height: 8),
+                        Text(
+                          ' Dryckesdetaljer',
+                          style: Theme.of(context).textTheme.titleLarge,
+                        ),
+                        const SizedBox(height: 12),
+
+                        // Form card
+                        Card(
+                          child: Padding(
+                            padding: const EdgeInsets.all(20.0),
+                            child: Column(
+                              children: [
+                                TextFormField(
+                                  controller: _nameController,
+                                  decoration: const InputDecoration(labelText: 'Dryckesnamn *'),
+                                  validator: (v) => v == null || v.trim().isEmpty ? 'Ange dryckesnamn' : null,
+                                ),
+                                const SizedBox(height: 16),
+                                TextFormField(
+                                  controller: _brandController,
+                                  decoration: const InputDecoration(labelText: 'Varumärke / Bryggeri *'),
+                                  validator: (v) => v == null || v.trim().isEmpty ? 'Ange varumärke' : null,
+                                ),
+                                const SizedBox(height: 16),
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      flex: 2,
+                                      child: DropdownButtonFormField<String>(
+                                        value: _selectedType,
+                                        decoration: const InputDecoration(labelText: 'Dryckestyp'),
+                                        items: _drinkTypes
+                                            .map((type) => DropdownMenuItem(value: type, child: Text(type)))
+                                            .toList(),
+                                        onChanged: (val) {
+                                          if (val != null) {
+                                            setState(() {
+                                              _selectedType = val;
+                                            });
+                                          }
+                                        },
+                                      ),
+                                    ),
+                                    const SizedBox(width: 16),
+                                    Expanded(
+                                      flex: 1,
+                                      child: TextFormField(
+                                        controller: _abvController,
+                                        decoration: const InputDecoration(labelText: 'ABV (%)', hintText: '5.0'),
+                                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                        validator: (v) {
+                                          if (v != null && v.isNotEmpty && double.tryParse(v) == null) {
+                                            return 'Fel format';
+                                          }
+                                          return null;
+                                        },
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 16),
+                                TextFormField(
+                                  controller: _descriptionController,
+                                  decoration: const InputDecoration(
+                                    labelText: 'AI-Etikettbeskrivning',
+                                    hintText: 'Läses in automatiskt från skanningen...',
+                                  ),
+                                  maxLines: 2,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+
+                        // Rating Slider card
+                        Text(
+                          ' Betygsätt & Recensera',
+                          style: Theme.of(context).textTheme.titleLarge,
+                        ),
+                        const SizedBox(height: 12),
+                        Card(
+                          child: Padding(
+                            padding: const EdgeInsets.all(20.0),
+                            child: Column(
+                              children: [
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    const Text(
+                                      'Ditt betyg:',
+                                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                                    ),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                      decoration: BoxDecoration(
+                                        color: AppTheme.getRatingColor(_rating),
+                                        borderRadius: BorderRadius.circular(10),
+                                        boxShadow: AppTheme.glowShadow(AppTheme.getRatingColor(_rating)),
+                                      ),
+                                      child: Text(
+                                        _rating.toStringAsFixed(1),
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 20,
+                                          fontWeight: FontWeight.w900,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 16),
+                                Slider(
+                                  value: _rating,
+                                  min: 1.0,
+                                  max: 10.0,
+                                  divisions: 18, // 0.5 steps
+                                  onChanged: (val) {
+                                    setState(() {
+                                      _rating = val;
+                                    });
+                                  },
+                                ),
+                                const Padding(
+                                  padding: EdgeInsets.symmetric(horizontal: 8.0),
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text('1.0 (Blä)', style: TextStyle(fontSize: 11, color: AppTheme.textSecondary)),
+                                      Text('5.0 (Helt ok)', style: TextStyle(fontSize: 11, color: AppTheme.textSecondary)),
+                                      Text('10.0 (Himmelsk)', style: TextStyle(fontSize: 11, color: AppTheme.textSecondary)),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(height: 24),
+                                TextFormField(
+                                  controller: _commentController,
+                                  decoration: const InputDecoration(
+                                    labelText: 'Recension / Kommentar (valfritt)',
+                                    hintText: 'Hur smakade den? Vad tycker du?',
+                                  ),
+                                  maxLines: 3,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 30),
+
+                        ElevatedButton(
+                          onPressed: _saveDrink,
+                          child: const Text('Spara recension'),
+                        ),
+                        const SizedBox(height: 40),
+                      ],
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPhotoSelectorBox() {
+    return Card(
+      clipBehavior: Clip.antiAlias,
+      child: Container(
+        height: 350,
+        decoration: BoxDecoration(
+          color: AppTheme.surfaceColor,
+        ),
+        child: Stack(
+          children: [
+            // Preview Image
+            if (_imageBytes != null)
+              Positioned.fill(
+                child: Image.memory(
+                  _imageBytes!,
+                  fit: BoxFit.cover,
+                ),
+              )
+            else
+              Positioned.fill(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(
+                      Icons.add_a_photo,
+                      size: 60,
+                      color: AppTheme.borderLight,
+                    ),
+                    const SizedBox(height: 16),
+                    const Text(
+                      'Ingen bild vald',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: AppTheme.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    const Text(
+                      'Fota eller ladda upp en bild på flaskan/burken',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: AppTheme.textSecondary,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        if (_isMobile) ...[
+                          ElevatedButton.icon(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppTheme.surfaceCardColor,
+                              foregroundColor: AppTheme.textPrimary,
+                              minimumSize: const Size(140, 44),
+                              side: const BorderSide(color: AppTheme.borderLight),
+                            ),
+                            onPressed: () => _pickImage(ImageSource.camera),
+                            icon: const Icon(Icons.camera_alt),
+                            label: const Text('Kamera'),
+                          ),
+                          const SizedBox(width: 12),
+                        ],
+                        ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppTheme.surfaceCardColor,
+                            foregroundColor: AppTheme.textPrimary,
+                            minimumSize: Size(_isMobile ? 140 : 220, 44),
+                            side: const BorderSide(color: AppTheme.borderLight),
+                          ),
+                          onPressed: () => _pickImage(ImageSource.gallery),
+                          icon: const Icon(Icons.photo_library),
+                          label: Text(_isMobile ? 'Galleri / Fil' : 'Välj bild från datorn'),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+
+            // Scanning Overlay Laser Animation
+            if (_imageBytes != null && _isScanning)
+              AnimatedBuilder(
+                animation: _laserAnimation,
+                builder: (context, child) {
+                  final offset = _laserAnimation.value * 350;
+                  return Stack(
+                    children: [
+                      // Translucent dark layer
+                      Container(color: Colors.black.withOpacity(0.3)),
+                      // The moving laser line
+                      Positioned(
+                        top: offset,
+                        left: 0,
+                        right: 0,
+                        child: Container(
+                          height: 3,
+                          decoration: BoxDecoration(
+                            color: AppTheme.accentGold,
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppTheme.accentGold.withOpacity(0.8),
+                                blurRadius: 10,
+                                spreadRadius: 3,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  );
+                },
+              ),
+
+            // Change Photo Button overlay
+            if (_imageBytes != null && !_isScanning)
+              Positioned(
+                bottom: 12,
+                right: 12,
+                child: Row(
+                  children: [
+                    if (_isMobile) ...[
+                      IconButton(
+                        style: IconButton.styleFrom(
+                          backgroundColor: Colors.black.withOpacity(0.6),
+                          foregroundColor: AppTheme.textPrimary,
+                        ),
+                        icon: const Icon(Icons.camera_alt),
+                        onPressed: () => _pickImage(ImageSource.camera),
+                      ),
+                      const SizedBox(width: 8),
+                    ],
+                    IconButton(
+                      style: IconButton.styleFrom(
+                        backgroundColor: Colors.black.withOpacity(0.6),
+                        foregroundColor: AppTheme.textPrimary,
+                      ),
+                      icon: const Icon(Icons.photo_library),
+                      onPressed: () => _pickImage(ImageSource.gallery),
+                    ),
+                  ],
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
