@@ -16,6 +16,7 @@ class AppViewModel extends ChangeNotifier {
   String _searchQuery = '';
   String _selectedTypeFilter = 'Alla';
   User? _currentUser;
+  bool _useOfflineMode = false;
 
   AppViewModel(
     this._storageService,
@@ -31,6 +32,12 @@ class AppViewModel extends ChangeNotifier {
   User? get currentUser => _currentUser;
   bool get isLoggedIn => _currentUser != null;
   bool get hasLocalOfflineDrinks => _storageService.getDrinks().isNotEmpty;
+  bool get useOfflineMode => _useOfflineMode;
+
+  void setOfflineMode(bool val) {
+    _useOfflineMode = val;
+    notifyListeners();
+  }
 
   // Initialize and load initial state
   Future<void> init() async {
@@ -164,6 +171,7 @@ class AppViewModel extends ChangeNotifier {
     _isLoading = true;
     notifyListeners();
     try {
+      _useOfflineMode = false;
       await FirebaseAuth.instance.signOut();
     } catch (e) {
       print('Sign out error: $e');

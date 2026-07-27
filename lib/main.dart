@@ -7,6 +7,7 @@ import 'data/services/gemini_service.dart';
 import 'ui/core/theme.dart';
 import 'ui/features/app_view_model.dart';
 import 'ui/features/dashboard/views/dashboard_view.dart';
+import 'ui/features/auth/views/login_view.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -40,7 +41,33 @@ class MyApp extends StatelessWidget {
       title: 'DryckesRanken',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.darkTheme,
-      home: const DashboardView(),
+      home: const AppHomeSelector(),
+    );
+  }
+}
+
+class AppHomeSelector extends StatelessWidget {
+  const AppHomeSelector({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Consumer<AppViewModel>(
+      builder: (context, viewModel, _) {
+        if (viewModel.isLoading) {
+          return const Scaffold(
+            body: Center(
+              child: CircularProgressIndicator(color: AppTheme.accentGold),
+            ),
+          );
+        }
+
+        // Redirect to LoginView if not logged in AND not opted for offline local mode
+        if (!viewModel.isLoggedIn && !viewModel.useOfflineMode) {
+          return const LoginView();
+        }
+
+        return const DashboardView();
+      },
     );
   }
 }
