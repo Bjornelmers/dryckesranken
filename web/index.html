@@ -33,14 +33,57 @@
   <link rel="manifest" href="manifest.json">
 </head>
 <body>
-  <!--
-    You can customize the "flutter_bootstrap.js" script.
-    This is useful to provide a custom configuration to the Flutter loader
-    or to give the user feedback during the initialization process.
+  <script>
+    // PWA Auto-Update Script (15min inactivity & 02:00-04:00 midnight window)
+    (function() {
+      let inactivityTimeout = null;
+      let isInactive = false;
 
-    For more details:
-    * https://docs.flutter.dev/platform-integration/web/initialization
-  -->
+      function resetInactivityTimer() {
+        clearTimeout(inactivityTimeout);
+        isInactive = false;
+        
+        // 15 minutes of inactivity (15 * 60 * 1000 ms)
+        inactivityTimeout = setTimeout(function() {
+          isInactive = true;
+          checkForUpdates();
+        }, 15 * 60 * 1000);
+      }
+
+      async function checkForUpdates() {
+        if ('serviceWorker' in navigator) {
+          const now = new Date();
+          const hour = now.getHours();
+          const isMidnightWindow = (hour >= 2 && hour < 4);
+
+          // Only check and update if user is inactive OR we are in the midnight window (02:00 - 04:00)
+          if (isInactive || isMidnightWindow) {
+            try {
+              const registrations = await navigator.serviceWorker.getRegistrations();
+              for (const reg of registrations) {
+                console.log('Checking for PWA updates (inactivity or midnight)...');
+                await reg.update();
+              }
+            } catch (e) {
+              console.warn('Failed to update service worker:', e);
+            }
+          }
+        }
+      }
+
+      // Initialize activity listeners
+      window.addEventListener('load', function() {
+        resetInactivityTimer();
+        const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart'];
+        events.forEach(function(name) {
+          document.addEventListener(name, resetInactivityTimer, true);
+        });
+
+        // Periodically attempt to check for updates every 5 minutes
+        setInterval(checkForUpdates, 5 * 60 * 1000);
+      });
+    })();
+  </script>
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>
