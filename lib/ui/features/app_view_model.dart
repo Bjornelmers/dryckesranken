@@ -15,6 +15,7 @@ class AppViewModel extends ChangeNotifier {
   String? _apiKey;
   String _searchQuery = '';
   String _selectedTypeFilter = 'Alla';
+  DateTimeRange? _selectedDateRangeFilter;
   User? _currentUser;
   bool _useOfflineMode = false;
   bool _skippedApiKeySetup = false;
@@ -30,6 +31,7 @@ class AppViewModel extends ChangeNotifier {
   bool get hasApiKey => _apiKey != null && _apiKey!.isNotEmpty;
   String get searchQuery => _searchQuery;
   String get selectedTypeFilter => _selectedTypeFilter;
+  DateTimeRange? get selectedDateRangeFilter => _selectedDateRangeFilter;
   User? get currentUser => _currentUser;
   bool get isLoggedIn => _currentUser != null;
   bool get hasLocalOfflineDrinks => _storageService.getDrinks().isNotEmpty;
@@ -128,7 +130,16 @@ class AppViewModel extends ChangeNotifier {
               .map((t) => t.trim().toLowerCase())
               .contains(_selectedTypeFilter.toLowerCase());
 
-      return matchesSearch && matchesType;
+      // 3. Apply Date Range Filter
+      bool matchesDate = true;
+      if (_selectedDateRangeFilter != null) {
+        final start = DateTime(_selectedDateRangeFilter!.start.year, _selectedDateRangeFilter!.start.month, _selectedDateRangeFilter!.start.day);
+        final end = DateTime(_selectedDateRangeFilter!.end.year, _selectedDateRangeFilter!.end.month, _selectedDateRangeFilter!.end.day, 23, 59, 59);
+        matchesDate = drink.createdAt.isAfter(start.subtract(const Duration(seconds: 1))) &&
+                      drink.createdAt.isBefore(end.add(const Duration(seconds: 1)));
+      }
+
+      return matchesSearch && matchesType && matchesDate;
     }).toList();
   }
 
@@ -220,6 +231,11 @@ class AppViewModel extends ChangeNotifier {
 
   void setSelectedTypeFilter(String filter) {
     _selectedTypeFilter = filter;
+    notifyListeners();
+  }
+
+  void setSelectedDateRangeFilter(DateTimeRange? range) {
+    _selectedDateRangeFilter = range;
     notifyListeners();
   }
 

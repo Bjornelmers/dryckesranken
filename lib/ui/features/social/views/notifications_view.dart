@@ -108,31 +108,67 @@ class NotificationsView extends StatelessWidget {
                         ),
                         // Recommendation Action Button
                         if (type == 'recommendation' && drinkName != null) ...[
-                          const SizedBox(height: 12),
-                          const Divider(color: AppTheme.borderLight),
-                          const SizedBox(height: 8),
-                          ElevatedButton.icon(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppTheme.accentGold,
-                              foregroundColor: Colors.black,
-                              minimumSize: const Size.fromHeight(40),
-                            ),
-                            onPressed: () async {
-                              await socialVm.addToWishlist(
-                                drinkName: drinkName,
-                                brand: drinkBrand ?? '',
-                                type: drinkType ?? 'Övrigt',
-                                recommendedBy: fromName,
-                              );
-                              await socialVm.markNotificationAsRead(notifId);
-                              if (context.mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(content: Text('$drinkName tillagd på din Borde-prova-lista! 📝')),
+                          Builder(
+                            builder: (context) {
+                              final isAdded = socialVm.wishlist.any((item) =>
+                                  (item['drinkName'] as String? ?? '').toLowerCase().trim() == drinkName.toLowerCase().trim() &&
+                                  (item['brand'] as String? ?? '').toLowerCase().trim() == (drinkBrand ?? '').toLowerCase().trim());
+
+                              if (isAdded) {
+                                return Column(
+                                  children: [
+                                    const SizedBox(height: 12),
+                                    const Divider(color: AppTheme.borderLight),
+                                    const SizedBox(height: 8),
+                                    const Row(
+                                      children: [
+                                        Icon(Icons.bookmark_added, color: AppTheme.textSecondary, size: 16),
+                                        SizedBox(width: 8),
+                                        Text(
+                                          'Tillagd på Borde-prova-listan 📝',
+                                          style: TextStyle(
+                                            color: AppTheme.textSecondary,
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
                                 );
                               }
+
+                              return Column(
+                                children: [
+                                  const SizedBox(height: 12),
+                                  const Divider(color: AppTheme.borderLight),
+                                  const SizedBox(height: 8),
+                                  ElevatedButton.icon(
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: AppTheme.accentGold,
+                                      foregroundColor: Colors.black,
+                                      minimumSize: const Size.fromHeight(40),
+                                    ),
+                                    onPressed: () async {
+                                      await socialVm.addToWishlist(
+                                        drinkName: drinkName,
+                                        brand: drinkBrand ?? '',
+                                        type: drinkType ?? 'Övrigt',
+                                        recommendedBy: fromName,
+                                      );
+                                      await socialVm.markNotificationAsRead(notifId);
+                                      if (context.mounted) {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(content: Text('$drinkName tillagd på din Borde-prova-lista! 📝')),
+                                        );
+                                      }
+                                    },
+                                    icon: const Icon(Icons.bookmark_add, size: 18),
+                                    label: const Text('+ Lägg till på min Borde-prova-lista', style: TextStyle(fontWeight: FontWeight.bold)),
+                                  ),
+                                ],
+                              );
                             },
-                            icon: const Icon(Icons.bookmark_add, size: 18),
-                            label: const Text('+ Lägg till på min Borde-prova-lista', style: TextStyle(fontWeight: FontWeight.bold)),
                           ),
                         ],
                         // Friend Request Action Buttons (Direct Accept / Decline)

@@ -51,6 +51,7 @@ class _AddDrinkViewState extends State<AddDrinkView> with SingleTickerProviderSt
   
   final _typeController = TextEditingController();
   double _rating = 5.0;
+  DateTime _selectedDate = DateTime.now();
 
   // Scanning laser animation
   late AnimationController _animationController;
@@ -89,6 +90,7 @@ class _AddDrinkViewState extends State<AddDrinkView> with SingleTickerProviderSt
       _companionController.text = drink.companion ?? '';
       _companionUid = drink.companionUid;
       _countryController.text = drink.country ?? '';
+      _selectedDate = drink.createdAt;
     } else if (widget.prefillDrink != null) {
       final drink = widget.prefillDrink!;
       _imageBytes = drink.imageBytes;
@@ -234,7 +236,7 @@ class _AddDrinkViewState extends State<AddDrinkView> with SingleTickerProviderSt
       comment: _commentController.text.trim(),
       imageBytes: _imageBytes,
       scannedDescription: _descriptionController.text.trim(),
-      createdAt: isEditing ? widget.drinkToEdit!.createdAt : DateTime.now(),
+      createdAt: _selectedDate,
       location: _locationController.text.trim(),
       companion: _companionController.text.trim(),
       companionUid: _companionUid,
@@ -283,15 +285,52 @@ class _AddDrinkViewState extends State<AddDrinkView> with SingleTickerProviderSt
                   Padding(
                     padding: const EdgeInsets.only(bottom: 16.0),
                     child: Container(
-                      padding: const EdgeInsets.all(12),
+                      padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
                         color: AppTheme.ratingRed.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(10),
                         border: Border.all(color: AppTheme.ratingRed.withOpacity(0.3)),
                       ),
-                      child: Text(
-                        _errorMessage,
-                        style: const TextStyle(color: AppTheme.textPrimary, fontSize: 14),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Row(
+                            children: [
+                              const Icon(Icons.error_outline, color: AppTheme.ratingRed, size: 20),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  _errorMessage,
+                                  style: const TextStyle(color: AppTheme.textPrimary, fontSize: 14),
+                                ),
+                              ),
+                            ],
+                          ),
+                          if (_imageBytes != null && !_hasScanned) ...[
+                            const SizedBox(height: 12),
+                            const Divider(color: AppTheme.borderLight),
+                            const SizedBox(height: 8),
+                            const Text(
+                              'Misslyckades skanningen? Du kan fortfarande lägga in bilden och fylla i all information själv manuellt.',
+                              style: TextStyle(color: AppTheme.textSecondary, fontSize: 13),
+                            ),
+                            const SizedBox(height: 12),
+                            ElevatedButton.icon(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppTheme.accentCyan,
+                                foregroundColor: Colors.black,
+                              ),
+                              onPressed: () {
+                                setState(() {
+                                  _errorMessage = '';
+                                  _hasScanned = true;
+                                });
+                              },
+                              icon: const Icon(Icons.edit, size: 18),
+                              label: const Text('Skriv in information manuellt', style: TextStyle(fontWeight: FontWeight.bold)),
+                            ),
+                          ],
+                        ],
                       ),
                     ),
                   ),
@@ -327,6 +366,22 @@ class _AddDrinkViewState extends State<AddDrinkView> with SingleTickerProviderSt
                               ? 'Analyserar etiketten med Gemini AI...'
                               : 'Simulerar skanning av flaska/burk...',
                           style: const TextStyle(color: AppTheme.accentGold, fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(height: 16),
+                        TextButton.icon(
+                          onPressed: () {
+                            setState(() {
+                              _isScanning = false;
+                              _hasScanned = true;
+                              _animationController.stop();
+                              _animationController.reset();
+                            });
+                          },
+                          icon: const Icon(Icons.keyboard_arrow_right, color: AppTheme.accentPink),
+                          label: const Text(
+                            'Avbryt skanning & fyll i manuellt',
+                            style: TextStyle(color: AppTheme.accentPink, fontWeight: FontWeight.bold),
+                          ),
                         ),
                       ],
                     ),
@@ -479,6 +534,61 @@ class _AddDrinkViewState extends State<AddDrinkView> with SingleTickerProviderSt
                             padding: const EdgeInsets.all(20.0),
                             child: Column(
                               children: [
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    const Row(
+                                      children: [
+                                        Icon(Icons.calendar_today, color: AppTheme.accentGold, size: 18),
+                                        SizedBox(width: 8),
+                                        Text(
+                                          'Datum för avsmakning:',
+                                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                                        ),
+                                      ],
+                                    ),
+                                    TextButton.icon(
+                                      onPressed: () async {
+                                        final picked = await showDatePicker(
+                                          context: context,
+                                          initialDate: _selectedDate,
+                                          firstDate: DateTime(2020),
+                                          lastDate: DateTime.now().add(const Duration(days: 365)),
+                                          builder: (context, child) {
+                                            return Theme(
+                                              data: Theme.of(context).copyWith(
+                                                colorScheme: const ColorScheme.dark(
+                                                  primary: AppTheme.accentGold,
+                                                  onPrimary: Colors.black,
+                                                  surface: AppTheme.surfaceCardColor,
+                                                  onSurface: AppTheme.textPrimary,
+                                                ),
+                                              ),
+                                              child: child!,
+                                            );
+                                          },
+                                        );
+                                        if (picked != null) {
+                                          setState(() {
+                                            _selectedDate = picked;
+                                          });
+                                        }
+                                      },
+                                      icon: const Icon(Icons.edit, color: AppTheme.accentGold, size: 14),
+                                      label: Text(
+                                        '${_selectedDate.day}/${_selectedDate.month} - ${_selectedDate.year}',
+                                        style: const TextStyle(
+                                          color: AppTheme.accentGold,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 12),
+                                const Divider(color: AppTheme.borderLight),
+                                const SizedBox(height: 12),
                                 Row(
                                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                   children: [

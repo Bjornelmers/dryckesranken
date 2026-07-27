@@ -388,47 +388,117 @@ class DashboardView extends StatelessWidget {
 
   Widget _buildFilterChips(BuildContext context, AppViewModel viewModel) {
     final categories = viewModel.availableCategories;
+    final hasDateFilter = viewModel.selectedDateRangeFilter != null;
     
     return SizedBox(
       height: 40,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        itemCount: categories.length,
-        itemBuilder: (context, index) {
-          final category = categories[index];
-          final isSelected = viewModel.selectedTypeFilter == category;
-          return Padding(
-            padding: const EdgeInsets.only(right: 8.0),
-            child: ChoiceChip(
-              label: Text(category),
-              selected: isSelected,
-              onSelected: (selected) {
-                if (selected) {
-                  viewModel.setSelectedTypeFilter(category);
+      child: Row(
+        children: [
+          // Date Filter chip
+          ChoiceChip(
+            avatar: Icon(
+              Icons.calendar_today,
+              color: hasDateFilter ? AppTheme.accentGold : AppTheme.textSecondary,
+              size: 14,
+            ),
+            label: Text(
+              !hasDateFilter
+                  ? 'Välj datum'
+                  : '${viewModel.selectedDateRangeFilter!.start.day}/${viewModel.selectedDateRangeFilter!.start.month} - ${viewModel.selectedDateRangeFilter!.end.day}/${viewModel.selectedDateRangeFilter!.end.month}',
+            ),
+            selected: hasDateFilter,
+            onSelected: (selected) async {
+              if (hasDateFilter) {
+                viewModel.setSelectedDateRangeFilter(null);
+              } else {
+                final picked = await showDateRangePicker(
+                  context: context,
+                  firstDate: DateTime(2020),
+                  lastDate: DateTime.now().add(const Duration(days: 365)),
+                  builder: (context, child) {
+                    return Theme(
+                      data: Theme.of(context).copyWith(
+                        colorScheme: const ColorScheme.dark(
+                          primary: AppTheme.accentGold,
+                          onPrimary: Colors.black,
+                          surface: AppTheme.surfaceCardColor,
+                          onSurface: AppTheme.textPrimary,
+                        ),
+                      ),
+                      child: child!,
+                    );
+                  },
+                );
+                if (picked != null) {
+                  viewModel.setSelectedDateRangeFilter(picked);
                 }
-              },
-              selectedColor: AppTheme.accentGold.withOpacity(0.2),
-              checkmarkColor: AppTheme.accentGold,
-              backgroundColor: AppTheme.surfaceCardColor,
-              labelStyle: TextStyle(
-                color: isSelected ? AppTheme.accentGold : AppTheme.textSecondary,
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-              ),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
-                side: BorderSide(
-                  color: isSelected ? AppTheme.accentGold : AppTheme.borderLight,
-                ),
+              }
+            },
+            selectedColor: AppTheme.accentGold.withOpacity(0.2),
+            checkmarkColor: AppTheme.accentGold,
+            backgroundColor: AppTheme.surfaceCardColor,
+            labelStyle: TextStyle(
+              color: hasDateFilter ? AppTheme.accentGold : AppTheme.textSecondary,
+              fontWeight: hasDateFilter ? FontWeight.bold : FontWeight.normal,
+            ),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+              side: BorderSide(
+                color: hasDateFilter ? AppTheme.accentGold : AppTheme.borderLight,
               ),
             ),
-          );
-        },
+          ),
+          const SizedBox(width: 8),
+          Container(
+            width: 1,
+            height: 24,
+            color: AppTheme.borderLight,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              itemCount: categories.length,
+              itemBuilder: (context, index) {
+                final category = categories[index];
+                final isSelected = viewModel.selectedTypeFilter == category;
+                return Padding(
+                  padding: const EdgeInsets.only(right: 8.0),
+                  child: ChoiceChip(
+                    label: Text(category),
+                    selected: isSelected,
+                    onSelected: (selected) {
+                      if (selected) {
+                        viewModel.setSelectedTypeFilter(category);
+                      }
+                    },
+                    selectedColor: AppTheme.accentGold.withOpacity(0.2),
+                    checkmarkColor: AppTheme.accentGold,
+                    backgroundColor: AppTheme.surfaceCardColor,
+                    labelStyle: TextStyle(
+                      color: isSelected ? AppTheme.accentGold : AppTheme.textSecondary,
+                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                      side: BorderSide(
+                        color: isSelected ? AppTheme.accentGold : AppTheme.borderLight,
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildEmptyState(BuildContext context, AppViewModel viewModel) {
-    final hasFilter = viewModel.searchQuery.isNotEmpty || viewModel.selectedTypeFilter != 'Alla';
+    final hasFilter = viewModel.searchQuery.isNotEmpty ||
+        viewModel.selectedTypeFilter != 'Alla' ||
+        viewModel.selectedDateRangeFilter != null;
 
     return Center(
       child: Padding(
@@ -450,7 +520,7 @@ class DashboardView extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               hasFilter
-                  ? 'Prova att rensa ditt filter eller söka efter något annat.'
+                  ? 'Prova av att rensa ditt filter eller söka efter något annat.'
                   : 'Du har inte rankat några drycker än. Klicka på knappen nedan för att lägga till din första recension!',
               style: Theme.of(context).textTheme.bodyMedium,
               textAlign: TextAlign.center,
@@ -461,6 +531,7 @@ class DashboardView extends StatelessWidget {
                 onPressed: () {
                   viewModel.setSearchQuery('');
                   viewModel.setSelectedTypeFilter('Alla');
+                  viewModel.setSelectedDateRangeFilter(null);
                 },
                 child: const Text('Rensa alla filter'),
               ),
