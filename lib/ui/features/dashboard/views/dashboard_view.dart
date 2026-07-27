@@ -185,14 +185,6 @@ class DashboardView extends StatelessWidget {
                 ),
               ),
 
-              // Statistics Section
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 10.0),
-                  child: _buildStatsSection(context, viewModel),
-                ),
-              ),
-
               // Search and Filter section
               SliverToBoxAdapter(
                 child: Padding(
@@ -221,6 +213,14 @@ class DashboardView extends StatelessWidget {
                       _buildFilterChips(context, viewModel),
                     ],
                   ),
+                ),
+              ),
+
+              // Statistics Section
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 10.0),
+                  child: _buildStatsSection(context, viewModel),
                 ),
               ),
 
@@ -298,6 +298,13 @@ class DashboardView extends StatelessWidget {
         value: viewModel.favoriteType,
         subtitle: 'högst snitt',
         color: AppTheme.ratingGreen,
+      ),
+      _StatItem(
+        icon: Icons.flag,
+        title: 'Favoritland',
+        value: viewModel.favoriteCountry,
+        subtitle: 'högst snitt',
+        color: AppTheme.accentCyan,
       ),
     ];
 

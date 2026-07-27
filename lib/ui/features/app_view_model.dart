@@ -135,21 +135,23 @@ class AppViewModel extends ChangeNotifier {
   // Raw original drinks list
   List<DrinkModel> get allDrinks => _drinks;
 
-  // Statistics calculation
-  int get totalDrinks => _drinks.length;
+  // Statistics calculation based on filtered list
+  int get totalDrinks => drinks.length;
 
   double get averageRating {
-    if (_drinks.isEmpty) return 0.0;
-    final total = _drinks.fold<double>(0.0, (sum, drink) => sum + drink.rating);
-    return double.parse((total / _drinks.length).toStringAsFixed(1));
+    final filtered = drinks;
+    if (filtered.isEmpty) return 0.0;
+    final total = filtered.fold<double>(0.0, (sum, drink) => sum + drink.rating);
+    return double.parse((total / filtered.length).toStringAsFixed(1));
   }
 
   String get favoriteType {
-    if (_drinks.isEmpty) return 'Ingen';
+    final filtered = drinks;
+    if (filtered.isEmpty) return 'Ingen';
     
     // Group drinks by tag and calculate average rating for each tag
     final Map<String, List<double>> tagRatings = {};
-    for (var drink in _drinks) {
+    for (var drink in filtered) {
       final tags = drink.type.split(',').map((t) => t.trim()).where((t) => t.isNotEmpty);
       for (var tag in tags) {
         tagRatings.putIfAbsent(tag, () => []).add(drink.rating);
@@ -168,6 +170,34 @@ class AppViewModel extends ChangeNotifier {
     });
 
     return bestType;
+  }
+
+  String get favoriteCountry {
+    final filtered = drinks;
+    if (filtered.isEmpty) return 'Ingen';
+
+    final Map<String, List<double>> countryRatings = {};
+    for (var drink in filtered) {
+      if (drink.country != null && drink.country!.trim().isNotEmpty) {
+        final country = drink.country!.trim();
+        countryRatings.putIfAbsent(country, () => []).add(drink.rating);
+      }
+    }
+
+    if (countryRatings.isEmpty) return 'Ingen';
+
+    String bestCountry = 'Ingen';
+    double bestAverage = 0.0;
+
+    countryRatings.forEach((country, ratings) {
+      final avg = ratings.reduce((a, b) => a + b) / ratings.length;
+      if (avg > bestAverage || (avg == bestAverage && ratings.length > (countryRatings[bestCountry]?.length ?? 0))) {
+        bestAverage = avg;
+        bestCountry = country;
+      }
+    });
+
+    return bestCountry;
   }
 
   // Unique categories currently present in the database (for filters)

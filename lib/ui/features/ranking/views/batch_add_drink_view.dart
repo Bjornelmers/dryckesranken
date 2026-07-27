@@ -31,6 +31,7 @@ class _BatchAddDrinkViewState extends State<BatchAddDrinkView> with SingleTicker
   final _abvController = TextEditingController();
   final _descriptionController = TextEditingController();
   final _commentController = TextEditingController();
+  final _countryController = TextEditingController();
 
   final _typeController = TextEditingController();
   double _rating = 5.0;
@@ -69,6 +70,7 @@ class _BatchAddDrinkViewState extends State<BatchAddDrinkView> with SingleTicker
     _brandController.dispose();
     _abvController.dispose();
     _typeController.dispose();
+    _countryController.dispose();
     _descriptionController.dispose();
     _commentController.dispose();
     super.dispose();
@@ -130,14 +132,8 @@ class _BatchAddDrinkViewState extends State<BatchAddDrinkView> with SingleTicker
           }
         }
 
-        final List<String> tags = [];
-        if (detectedType != null && detectedType.isNotEmpty) {
-          tags.add(detectedType);
-        }
-        if (cleanCountry.isNotEmpty) {
-          tags.add(cleanCountry);
-        }
-        _typeController.text = tags.join(', ');
+        _typeController.text = detectedType ?? '';
+        _countryController.text = cleanCountry;
 
         final detectedAbv = result['abv'];
         if (detectedAbv is num) {
@@ -173,13 +169,14 @@ class _BatchAddDrinkViewState extends State<BatchAddDrinkView> with SingleTicker
       id: DateTime.now().microsecondsSinceEpoch.toString(),
       name: _nameController.text.trim(),
       brand: _brandController.text.trim(),
-      type: _typeController.text.split(',').map((t) => t.trim()).where((t) => t.isNotEmpty).join(', '),
+      type: _typeController.text.trim(),
       abv: abv,
       rating: _rating,
       comment: _commentController.text.trim(),
       imageBytes: _currentImageBytes,
       scannedDescription: _descriptionController.text.trim(),
       createdAt: DateTime.now(),
+      country: _countryController.text.trim(),
     );
 
     final viewModel = Provider.of<AppViewModel>(context, listen: false);
@@ -356,10 +353,21 @@ class _BatchAddDrinkViewState extends State<BatchAddDrinkView> with SingleTicker
                                             child: TextFormField(
                                               controller: _typeController,
                                               decoration: const InputDecoration(
-                                                labelText: 'Kategorier / Taggar (t.ex. Lager, Sverige)',
-                                                hintText: 'Lager, Sverige',
+                                                labelText: 'Kategori (t.ex. IPA, Lager) *',
+                                                hintText: 'Lager',
                                               ),
-                                              validator: (v) => v == null || v.trim().isEmpty ? 'Ange minst en kategori' : null,
+                                              validator: (v) => v == null || v.trim().isEmpty ? 'Ange kategori' : null,
+                                            ),
+                                          ),
+                                          const SizedBox(width: 16),
+                                          Expanded(
+                                            flex: 2,
+                                            child: TextFormField(
+                                              controller: _countryController,
+                                              decoration: const InputDecoration(
+                                                labelText: 'Ursprungsland',
+                                                hintText: 'Sverige',
+                                              ),
                                             ),
                                           ),
                                           const SizedBox(width: 16),

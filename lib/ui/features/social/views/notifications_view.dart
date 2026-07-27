@@ -137,56 +137,94 @@ class NotificationsView extends StatelessWidget {
                         ],
                         // Friend Request Action Buttons (Direct Accept / Decline)
                         if (type == 'friend_request') ...[
-                          const SizedBox(height: 12),
-                          const Divider(color: AppTheme.borderLight),
-                          const SizedBox(height: 8),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: ElevatedButton.icon(
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: AppTheme.accentGold,
-                                    foregroundColor: Colors.black,
-                                  ),
-                                  onPressed: () async {
-                                    final fromUserId = notif['fromUserId'] as String? ?? '';
-                                    final match = socialVm.incomingRequests.firstWhere(
-                                      (r) => r['fromUserId'] == fromUserId,
-                                      orElse: () => {'id': '${fromUserId}_current'},
-                                    );
-                                    await socialVm.respondToFriendRequest(match['id'] as String, fromUserId, true);
-                                    await socialVm.markNotificationAsRead(notifId);
-                                    if (context.mounted) {
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        SnackBar(content: Text('Du och $fromName är nu vänner!')),
-                                      );
-                                    }
-                                  },
-                                  icon: const Icon(Icons.check_circle, size: 18),
-                                  label: const Text('Godkänn', style: TextStyle(fontWeight: FontWeight.bold)),
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: OutlinedButton.icon(
-                                  style: OutlinedButton.styleFrom(
-                                    side: const BorderSide(color: AppTheme.accentPink),
-                                    foregroundColor: AppTheme.accentPink,
-                                  ),
-                                  onPressed: () async {
-                                    final fromUserId = notif['fromUserId'] as String? ?? '';
-                                    final match = socialVm.incomingRequests.firstWhere(
-                                      (r) => r['fromUserId'] == fromUserId,
-                                      orElse: () => {'id': '${fromUserId}_current'},
-                                    );
-                                    await socialVm.respondToFriendRequest(match['id'] as String, fromUserId, false);
-                                    await socialVm.markNotificationAsRead(notifId);
-                                  },
-                                  icon: const Icon(Icons.cancel, size: 18),
-                                  label: const Text('Neka'),
-                                ),
-                              ),
-                            ],
+                          Builder(
+                            builder: (context) {
+                              final fromUserId = notif['fromUserId'] as String? ?? '';
+                              final isPending = socialVm.incomingRequests.any((r) => r['fromUserId'] == fromUserId);
+                              final isFriend = socialVm.friends.any((f) => f['uid'] == fromUserId);
+
+                              if (isPending) {
+                                return Column(
+                                  children: [
+                                    const SizedBox(height: 12),
+                                    const Divider(color: AppTheme.borderLight),
+                                    const SizedBox(height: 8),
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: ElevatedButton.icon(
+                                            style: ElevatedButton.styleFrom(
+                                              backgroundColor: AppTheme.accentGold,
+                                              foregroundColor: Colors.black,
+                                            ),
+                                            onPressed: () async {
+                                              final match = socialVm.incomingRequests.firstWhere(
+                                                (r) => r['fromUserId'] == fromUserId,
+                                                orElse: () => {'id': '${fromUserId}_current'},
+                                              );
+                                              await socialVm.respondToFriendRequest(match['id'] as String, fromUserId, true);
+                                              await socialVm.markNotificationAsRead(notifId);
+                                              if (context.mounted) {
+                                                ScaffoldMessenger.of(context).showSnackBar(
+                                                  SnackBar(content: Text('Du och $fromName är nu vänner!')),
+                                                );
+                                              }
+                                            },
+                                            icon: const Icon(Icons.check_circle, size: 18),
+                                            label: const Text('Godkänn', style: TextStyle(fontWeight: FontWeight.bold)),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 12),
+                                        Expanded(
+                                          child: OutlinedButton.icon(
+                                            style: OutlinedButton.styleFrom(
+                                              side: const BorderSide(color: AppTheme.accentPink),
+                                              foregroundColor: AppTheme.accentPink,
+                                            ),
+                                            onPressed: () async {
+                                              final match = socialVm.incomingRequests.firstWhere(
+                                                (r) => r['fromUserId'] == fromUserId,
+                                                orElse: () => {'id': '${fromUserId}_current'},
+                                              );
+                                              await socialVm.respondToFriendRequest(match['id'] as String, fromUserId, false);
+                                              await socialVm.markNotificationAsRead(notifId);
+                                            },
+                                            icon: const Icon(Icons.cancel, size: 18),
+                                            label: const Text('Neka', style: TextStyle(fontWeight: FontWeight.bold)),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                );
+                              } else {
+                                return Column(
+                                  children: [
+                                    const SizedBox(height: 12),
+                                    const Divider(color: AppTheme.borderLight),
+                                    const SizedBox(height: 8),
+                                    Row(
+                                      children: [
+                                        Icon(
+                                          isFriend ? Icons.people_outline : Icons.done,
+                                          color: AppTheme.textSecondary,
+                                          size: 16,
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          isFriend ? 'Vänförfrågan godkänd 👥' : 'Hanterad',
+                                          style: const TextStyle(
+                                            color: AppTheme.textSecondary,
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                );
+                              }
+                            },
                           ),
                         ],
                       ],

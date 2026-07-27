@@ -115,31 +115,57 @@ class DrinkDetailView extends StatelessWidget {
                             children: [
                               Row(
                                 children: [
-                                  Row(
-                                    children: drink.type.split(',').map((tag) {
-                                      final t = tag.trim();
-                                      if (t.isEmpty) return const SizedBox.shrink();
-                                      return Padding(
-                                        padding: const EdgeInsets.only(right: 6),
-                                        child: Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                                          decoration: BoxDecoration(
-                                            color: AppTheme.accentCyan.withOpacity(0.15),
-                                            borderRadius: BorderRadius.circular(8),
-                                            border: Border.all(color: AppTheme.accentCyan.withOpacity(0.4)),
-                                          ),
-                                          child: Text(
-                                            t,
-                                            style: const TextStyle(
-                                              color: AppTheme.accentCyan,
-                                              fontWeight: FontWeight.bold,
-                                              fontSize: 12,
+                                  if (drink.country != null && drink.country!.isNotEmpty) ...[
+                                    Padding(
+                                      padding: const EdgeInsets.only(right: 6),
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                        decoration: BoxDecoration(
+                                          color: AppTheme.accentGold.withOpacity(0.15),
+                                          borderRadius: BorderRadius.circular(8),
+                                          border: Border.all(color: AppTheme.accentGold.withOpacity(0.4)),
+                                        ),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            const Icon(Icons.flag, color: AppTheme.accentGold, size: 12),
+                                            const SizedBox(width: 4),
+                                            Text(
+                                              drink.country!,
+                                              style: const TextStyle(
+                                                color: AppTheme.accentGold,
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 12,
+                                              ),
                                             ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                  ...drink.type.split(',').map((tag) {
+                                    final t = tag.trim();
+                                    if (t.isEmpty) return const SizedBox.shrink();
+                                    return Padding(
+                                      padding: const EdgeInsets.only(right: 6),
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                        decoration: BoxDecoration(
+                                          color: AppTheme.accentCyan.withOpacity(0.15),
+                                          borderRadius: BorderRadius.circular(8),
+                                          border: Border.all(color: AppTheme.accentCyan.withOpacity(0.4)),
+                                        ),
+                                        child: Text(
+                                          t,
+                                          style: const TextStyle(
+                                            color: AppTheme.accentCyan,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 12,
                                           ),
                                         ),
-                                      );
-                                    }).toList(),
-                                  ),
+                                      ),
+                                    );
+                                  }).toList(),
                                   const SizedBox(width: 8),
                                   Container(
                                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
@@ -261,35 +287,38 @@ class DrinkDetailView extends StatelessWidget {
                           ),
                           const SizedBox(height: 28),
 
-                          // Comment section
-                          Text(
-                            isReadOnly ? '${friendName ?? "Vännens"} recension' : 'Din recension',
-                            style: Theme.of(context).textTheme.titleLarge,
-                          ),
-                          const SizedBox(height: 10),
-                          Card(
-                            child: Padding(
-                              padding: const EdgeInsets.all(20.0),
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Icon(Icons.format_quote, color: AppTheme.accentGold, size: 28),
-                                  const SizedBox(width: 10),
-                                  Expanded(
-                                    child: Text(
-                                      drink.comment,
-                                      style: const TextStyle(
-                                        fontSize: 16,
-                                        fontStyle: FontStyle.italic,
-                                        color: AppTheme.textPrimary,
-                                        height: 1.4,
+                          if (drink.comment.isNotEmpty) ...[
+                            // Comment section
+                            Text(
+                              isReadOnly ? '${friendName ?? "Vännens"} recension' : 'Din recension',
+                              style: Theme.of(context).textTheme.titleLarge,
+                            ),
+                            const SizedBox(height: 10),
+                            Card(
+                              child: Padding(
+                                padding: const EdgeInsets.all(20.0),
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Icon(Icons.format_quote, color: AppTheme.accentGold, size: 28),
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: Text(
+                                        drink.comment,
+                                        style: const TextStyle(
+                                          fontSize: 16,
+                                          fontStyle: FontStyle.italic,
+                                          color: AppTheme.textPrimary,
+                                          height: 1.4,
+                                        ),
                                       ),
                                     ),
-                                  ),
-                                ],
+                                  ],
+                                ),
                               ),
                             ),
-                          ),
+                            const SizedBox(height: 28),
+                          ],
                           if ((drink.location != null && drink.location!.isNotEmpty) ||
                               (drink.companion != null && drink.companion!.isNotEmpty)) ...[
                             const SizedBox(height: 16),
@@ -503,17 +532,19 @@ class DrinkDetailView extends StatelessWidget {
                                        }).toList();
 
                                        if (filteredRatings.isEmpty) {
-                                         return const Card(
+                                         return Card(
                                            child: Padding(
-                                             padding: EdgeInsets.all(16.0),
+                                             padding: const EdgeInsets.all(16.0),
                                              child: Row(
                                                children: [
-                                                 Icon(Icons.info_outline, color: AppTheme.textSecondary, size: 20),
-                                                 SizedBox(width: 12),
+                                                 const Icon(Icons.info_outline, color: AppTheme.textSecondary, size: 20),
+                                                 const SizedBox(width: 12),
                                                  Expanded(
                                                    child: Text(
-                                                     'Ingen av dina vänner har betygsatt denna dryck än.',
-                                                     style: TextStyle(color: AppTheme.textSecondary, fontSize: 13),
+                                                     isReadOnly
+                                                         ? 'Ingen av dina andra vänner har betygsatt denna dryck än.'
+                                                         : 'Ingen av dina vänner har betygsatt denna dryck än.',
+                                                     style: const TextStyle(color: AppTheme.textSecondary, fontSize: 13),
                                                    ),
                                                  ),
                                                ],
