@@ -29,6 +29,8 @@ class SocialViewModel extends ChangeNotifier {
   StreamSubscription? _wishlistSub;
 
   // Getters
+  String? get currentUserId => _currentUserId;
+  String? get currentUserName => _currentUserName;
   String get privacyMode => _privacyMode;
   bool get isLoading => _isLoading;
   bool get isSearching => _isSearching;

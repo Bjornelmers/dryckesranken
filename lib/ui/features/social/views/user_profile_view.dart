@@ -46,14 +46,16 @@ class _UserProfileViewState extends State<UserProfileView> {
     _isFriend = socialVm.friends.any((f) => f['uid'] == widget.userId);
 
     try {
-      final privacy = await socialVm.getUserPrivacyMode(widget.userId);
+      final privacy = await socialVm.getUserPrivacyMode(widget.userId)
+          .timeout(const Duration(seconds: 4), onTimeout: () => 'friendsOnly');
       _privacyMode = privacy;
 
       // Check permission to view rankings
       final canView = privacy == 'public' || _isFriend;
 
       if (canView) {
-        final drinks = await _storageService.getDrinksFromCloud(widget.userId);
+        final drinks = await _storageService.getDrinksFromCloud(widget.userId)
+            .timeout(const Duration(seconds: 4), onTimeout: () => <DrinkModel>[]);
         _userDrinks = drinks;
       }
     } catch (e) {
@@ -287,6 +289,7 @@ class _UserProfileViewState extends State<UserProfileView> {
                 drinkId: drink.id,
                 initialDrink: drink,
                 isReadOnly: true,
+                friendName: widget.userName,
               ),
             ),
           );

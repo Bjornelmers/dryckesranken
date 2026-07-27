@@ -489,16 +489,21 @@ class _SettingsViewState extends State<SettingsView> {
                               style: ElevatedButton.styleFrom(
                                 minimumSize: const Size.fromHeight(50),
                               ),
-                              onPressed: () {
+                              onPressed: () async {
                                 try {
                                   if (html.window.navigator.serviceWorker != null) {
-                                    html.window.navigator.serviceWorker!.getRegistrations().then((registrations) {
-                                      for (var reg in registrations) {
-                                        reg.unregister();
-                                      }
-                                    });
+                                    final registrations = await html.window.navigator.serviceWorker!.getRegistrations();
+                                    for (var reg in registrations) {
+                                      await reg.unregister();
+                                    }
                                   }
                                 } catch (_) {}
+                                try {
+                                  html.window.localStorage.clear();
+                                  html.window.sessionStorage.clear();
+                                } catch (_) {}
+                                
+                                await Future.delayed(const Duration(milliseconds: 300));
                                 html.window.location.href = html.window.location.origin;
                               },
                               icon: const Icon(Icons.cached),

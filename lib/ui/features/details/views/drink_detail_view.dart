@@ -10,12 +10,14 @@ class DrinkDetailView extends StatelessWidget {
   final String drinkId;
   final DrinkModel? initialDrink;
   final bool isReadOnly;
+  final String? friendName;
 
   const DrinkDetailView({
     super.key,
     required this.drinkId,
     this.initialDrink,
     this.isReadOnly = false,
+    this.friendName,
   });
 
   @override
@@ -38,6 +40,10 @@ class DrinkDetailView extends StatelessWidget {
         final bool hasAlreadyRated = viewModel.allDrinks.any((d) =>
             d.name.toLowerCase().trim() == drink.name.toLowerCase().trim() &&
             d.brand.toLowerCase().trim() == drink.brand.toLowerCase().trim());
+        final matchingOwnDrinks = viewModel.allDrinks.where((d) =>
+            d.name.toLowerCase().trim() == drink.name.toLowerCase().trim() &&
+            d.brand.toLowerCase().trim() == drink.brand.toLowerCase().trim());
+        final DrinkModel? matchingOwnDrink = matchingOwnDrinks.isNotEmpty ? matchingOwnDrinks.first : null;
 
         return Scaffold(
           body: CustomScrollView(
@@ -257,7 +263,7 @@ class DrinkDetailView extends StatelessWidget {
 
                           // Comment section
                           Text(
-                            'Din recension',
+                            isReadOnly ? '${friendName ?? "Vännens"} recension' : 'Din recension',
                             style: Theme.of(context).textTheme.titleLarge,
                           ),
                           const SizedBox(height: 10),
@@ -414,6 +420,62 @@ class DrinkDetailView extends StatelessWidget {
                                    ),
                                    const SizedBox(height: 28),
 
+                                   // Dedicated "Ditt betyg" section when viewing a friend's drink
+                                   if (isReadOnly && matchingOwnDrink != null) ...[
+                                     Text(
+                                       'Ditt betyg',
+                                       style: Theme.of(context).textTheme.titleLarge,
+                                     ),
+                                     const SizedBox(height: 10),
+                                     Card(
+                                       child: InkWell(
+                                         onTap: () {
+                                           Navigator.push(
+                                             context,
+                                             MaterialPageRoute(
+                                               builder: (context) => DrinkDetailView(drinkId: matchingOwnDrink.id),
+                                             ),
+                                           );
+                                         },
+                                         child: Padding(
+                                           padding: const EdgeInsets.all(16.0),
+                                           child: Row(
+                                             children: [
+                                               CircleAvatar(
+                                                 radius: 20,
+                                                 backgroundColor: AppTheme.accentGold.withOpacity(0.2),
+                                                 child: const Icon(Icons.star, color: AppTheme.accentGold),
+                                               ),
+                                               const SizedBox(width: 12),
+                                               Expanded(
+                                                 child: Column(
+                                                   crossAxisAlignment: CrossAxisAlignment.start,
+                                                   children: [
+                                                     Text(
+                                                       'Du gav denna dryck ${matchingOwnDrink.rating.toStringAsFixed(1)} / 10 ⭐',
+                                                       style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                                                     ),
+                                                     if (matchingOwnDrink.comment.isNotEmpty) ...[
+                                                       const SizedBox(height: 4),
+                                                       Text(
+                                                         '"${matchingOwnDrink.comment}"',
+                                                         style: const TextStyle(color: AppTheme.textSecondary, fontStyle: FontStyle.italic, fontSize: 13),
+                                                         maxLines: 1,
+                                                         overflow: TextOverflow.ellipsis,
+                                                       ),
+                                                     ],
+                                                   ],
+                                                 ),
+                                               ),
+                                               const Icon(Icons.chevron_right, color: AppTheme.textSecondary),
+                                             ],
+                                           ),
+                                         ),
+                                       ),
+                                     ),
+                                     const SizedBox(height: 28),
+                                   ],
+
                                    // Friends' Ratings Section
                                    Text(
                                      'Vänners betyg',
@@ -427,7 +489,20 @@ class DrinkDetailView extends StatelessWidget {
                                          return const Center(child: CircularProgressIndicator(color: AppTheme.accentGold));
                                        }
                                        final ratings = snapshot.data ?? [];
-                                       if (ratings.isEmpty) {
+                                       final filteredRatings = ratings.where((item) {
+                                         final name = item['friendName'] as String? ?? '';
+                                         // Exclude friend whose profile we are looking at
+                                         if (isReadOnly && name.toLowerCase() == friendName?.toLowerCase()) {
+                                           return false;
+                                         }
+                                         // Exclude current user (us)
+                                         if (name.toLowerCase() == socialVm.currentUserName?.toLowerCase()) {
+                                           return false;
+                                         }
+                                         return true;
+                                       }).toList();
+
+                                       if (filteredRatings.isEmpty) {
                                          return const Card(
                                            child: Padding(
                                              padding: EdgeInsets.all(16.0),
@@ -448,7 +523,7 @@ class DrinkDetailView extends StatelessWidget {
                                        }
 
                                        return Column(
-                                         children: ratings.map((item) {
+                                         children: filteredRatings.map((item) {
                                            final fName = item['friendName'] as String? ?? 'Vän';
                                            final fPhoto = item['friendPhoto'] as String?;
                                            final score = item['rating'] as double? ?? 5.0;
