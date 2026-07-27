@@ -733,7 +733,7 @@ class _DrinkDetailViewState extends State<DrinkDetailView> {
               onPressed: () async {
                 final navigator = Navigator.of(context);
                 final messenger = ScaffoldMessenger.of(context);
-                await viewModel.deleteDrink(drinkId);
+                await viewModel.deleteDrink(widget.drinkId);
                 // Pop the dialog
                 navigator.pop();
                 // Pop the details view back to dashboard
