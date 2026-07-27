@@ -17,6 +17,7 @@ class AppViewModel extends ChangeNotifier {
   String _selectedTypeFilter = 'Alla';
   User? _currentUser;
   bool _useOfflineMode = false;
+  bool _skippedApiKeySetup = false;
 
   AppViewModel(
     this._storageService,
@@ -33,9 +34,15 @@ class AppViewModel extends ChangeNotifier {
   bool get isLoggedIn => _currentUser != null;
   bool get hasLocalOfflineDrinks => _storageService.getDrinks().isNotEmpty;
   bool get useOfflineMode => _useOfflineMode;
+  bool get skippedApiKeySetup => _skippedApiKeySetup;
 
   void setOfflineMode(bool val) {
     _useOfflineMode = val;
+    notifyListeners();
+  }
+
+  void skipApiKeySetup() {
+    _skippedApiKeySetup = true;
     notifyListeners();
   }
 
@@ -172,6 +179,7 @@ class AppViewModel extends ChangeNotifier {
     notifyListeners();
     try {
       _useOfflineMode = false;
+      _skippedApiKeySetup = false;
       await FirebaseAuth.instance.signOut();
     } catch (e) {
       print('Sign out error: $e');

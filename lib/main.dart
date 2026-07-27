@@ -8,6 +8,7 @@ import 'ui/core/theme.dart';
 import 'ui/features/app_view_model.dart';
 import 'ui/features/dashboard/views/dashboard_view.dart';
 import 'ui/features/auth/views/login_view.dart';
+import 'ui/features/auth/views/api_key_setup_view.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -64,6 +65,11 @@ class AppHomeSelector extends StatelessWidget {
         // Redirect to LoginView if not logged in AND not opted for offline local mode
         if (!viewModel.isLoggedIn && !viewModel.useOfflineMode) {
           return const LoginView();
+        }
+
+        // Redirect to ApiKeySetupView if no API Key is saved and setup hasn't been skipped
+        if (!viewModel.hasApiKey && !viewModel.skippedApiKeySetup) {
+          return const ApiKeySetupView();
         }
 
         return const DashboardView();
