@@ -400,6 +400,45 @@ class _SettingsViewState extends State<SettingsView> {
                     ),
                     const SizedBox(height: 24),
 
+                    // System & Version Card
+                    Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(20.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                const Icon(Icons.refresh, color: AppTheme.accentCyan, size: 28),
+                                const SizedBox(width: 12),
+                                Text(
+                                  'System & Uppdateringar',
+                                  style: Theme.of(context).textTheme.titleLarge,
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            const Text(
+                              'Om du misstänker att du inte har den senaste versionen av appen kan du ladda om den här för att tvinga fram en uppdatering.',
+                              style: TextStyle(color: AppTheme.textSecondary, fontSize: 14),
+                            ),
+                            const SizedBox(height: 20),
+                            ElevatedButton.icon(
+                              style: ElevatedButton.styleFrom(
+                                minimumSize: const Size.fromHeight(50),
+                              ),
+                              onPressed: () {
+                                html.window.location.reload();
+                              },
+                              icon: const Icon(Icons.cached),
+                              label: const Text('Ladda om och uppdatera appen'),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+
                     // Reset Data card
                     Card(
                       child: Padding(
