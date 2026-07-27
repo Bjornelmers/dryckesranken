@@ -208,6 +208,7 @@ class _AddDrinkViewState extends State<AddDrinkView> with SingleTickerProviderSt
       createdAt: isEditing ? widget.drinkToEdit!.createdAt : DateTime.now(),
     );
 
+    final viewModel = Provider.of<AppViewModel>(context, listen: false);
     await viewModel.addDrink(drink);
 
     final socialVm = Provider.of<SocialViewModel>(context, listen: false);

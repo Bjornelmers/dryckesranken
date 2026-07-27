@@ -478,6 +478,8 @@ class DrinkDetailView extends StatelessWidget {
         builder: (context) => AddDrinkView(drinkToEdit: drink),
       ),
     );
+  }
+
   void _showRecommendModal(BuildContext context, SocialViewModel socialVm, DrinkModel drink) {
     if (socialVm.friends.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
