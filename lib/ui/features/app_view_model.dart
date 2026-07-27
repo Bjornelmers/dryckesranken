@@ -46,7 +46,6 @@ class AppViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  // Initialize and load initial state
   Future<void> init() async {
     _isLoading = true;
     notifyListeners();
@@ -60,6 +59,23 @@ class AppViewModel extends ChangeNotifier {
       _isLoading = true;
       notifyListeners();
 
+      if (user != null) {
+        // Sync API Key from Cloud if local is empty
+        if (_apiKey == null || _apiKey!.isEmpty) {
+          final cloudKey = await _storageService.getApiKeyFromCloud(user.uid);
+          if (cloudKey != null && cloudKey.isNotEmpty) {
+            await _storageService.saveApiKey(cloudKey);
+            _apiKey = cloudKey;
+          }
+        } else {
+          // If we have a local key, upload it to the cloud in case the cloud key is empty
+          final cloudKey = await _storageService.getApiKeyFromCloud(user.uid);
+          if (cloudKey == null || cloudKey.isEmpty) {
+            await _storageService.saveApiKeyToCloud(user.uid, _apiKey!);
+          }
+        }
+      }
+
       await _loadDrinks();
 
       _isLoading = false;
@@ -68,6 +84,15 @@ class AppViewModel extends ChangeNotifier {
 
     // Run first manual load in case auth state listener hasn't fired yet
     _currentUser = FirebaseAuth.instance.currentUser;
+    if (_currentUser != null) {
+      if (_apiKey == null || _apiKey!.isEmpty) {
+        final cloudKey = await _storageService.getApiKeyFromCloud(_currentUser!.uid);
+        if (cloudKey != null && cloudKey.isNotEmpty) {
+          await _storageService.saveApiKey(cloudKey);
+          _apiKey = cloudKey;
+        }
+      }
+    }
     await _loadDrinks();
 
     _isLoading = false;
@@ -242,6 +267,10 @@ class AppViewModel extends ChangeNotifier {
     await _storageService.saveApiKey(apiKey);
     _apiKey = _storageService.getApiKey();
 
+    if (isLoggedIn) {
+      await _storageService.saveApiKeyToCloud(_currentUser!.uid, apiKey);
+    }
+
     _isLoading = false;
     notifyListeners();
   }
@@ -252,6 +281,10 @@ class AppViewModel extends ChangeNotifier {
 
     await _storageService.saveApiKey('');
     _apiKey = null;
+
+    if (isLoggedIn) {
+      await _storageService.saveApiKeyToCloud(_currentUser!.uid, '');
+    }
 
     _isLoading = false;
     notifyListeners();

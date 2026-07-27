@@ -101,6 +101,36 @@ class StorageService {
     }
   }
 
+  // Save API Key to Firestore
+  Future<void> saveApiKeyToCloud(String userId, String apiKey) async {
+    try {
+      await _firestore
+          .collection('users')
+          .doc(userId)
+          .set({'gemini_api_key': apiKey}, SetOptions(merge: true));
+    } catch (e) {
+      print('Error saving API Key to Firestore: $e');
+      rethrow;
+    }
+  }
+
+  // Get API Key from Firestore
+  Future<String?> getApiKeyFromCloud(String userId) async {
+    try {
+      final doc = await _firestore.collection('users').doc(userId).get();
+      if (doc.exists) {
+        final data = doc.data();
+        if (data != null && data.containsKey('gemini_api_key')) {
+          return data['gemini_api_key'] as String?;
+        }
+      }
+      return null;
+    } catch (e) {
+      print('Error getting API Key from Firestore: $e');
+      return null;
+    }
+  }
+
   // Helper: Convert DrinkModel to a Firestore-compatible Map
   Map<String, dynamic> _toFirestoreMap(DrinkModel drink) {
     final map = drink.toMap();
