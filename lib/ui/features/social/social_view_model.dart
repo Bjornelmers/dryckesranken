@@ -217,6 +217,11 @@ class SocialViewModel extends ChangeNotifier {
     await _socialService.markNotificationAsRead(_currentUserId!, notificationId);
   }
 
+  Future<void> markAllNotificationsAsRead() async {
+    if (_currentUserId == null) return;
+    await _socialService.markAllNotificationsAsRead(_currentUserId!);
+  }
+
   Future<void> notifyFriendsOfRating(DrinkModel drink) async {
     if (_currentUserId == null) return;
     await _socialService.notifyFriendsOfDrinkRating(

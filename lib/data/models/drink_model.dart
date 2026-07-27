@@ -15,6 +15,7 @@ class DrinkModel {
   final String? companion;
   final String? companionUid;
   final String? country;
+  final String? mainCategory;
 
   DrinkModel({
     required this.id,
@@ -31,6 +32,7 @@ class DrinkModel {
     this.companion,
     this.companionUid,
     this.country,
+    this.mainCategory,
   });
 
   // Convert DrinkModel to a Map for Hive/Firestore storage
@@ -50,6 +52,7 @@ class DrinkModel {
       'companion': companion,
       'companionUid': companionUid,
       'country': country,
+      'mainCategory': mainCategory ?? 'Övrigt',
     };
   }
 
@@ -72,6 +75,7 @@ class DrinkModel {
       companion: map['companion'] as String?,
       companionUid: map['companionUid'] as String?,
       country: map['country'] as String?,
+      mainCategory: map['mainCategory'] as String? ?? 'Övrigt',
     );
   }
 
@@ -91,6 +95,7 @@ class DrinkModel {
     String? companion,
     String? companionUid,
     String? country,
+    String? mainCategory,
   }) {
     return DrinkModel(
       id: id ?? this.id,
@@ -107,6 +112,7 @@ class DrinkModel {
       companion: companion ?? this.companion,
       companionUid: companionUid ?? this.companionUid,
       country: country ?? this.country,
+      mainCategory: mainCategory ?? this.mainCategory,
     );
   }
 }

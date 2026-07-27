@@ -14,11 +14,15 @@ import '../../social/social_view_model.dart';
 class AddDrinkView extends StatefulWidget {
   final DrinkModel? drinkToEdit;
   final DrinkModel? prefillDrink;
+  final ImageSource? initialSource;
+  final bool skipScan;
 
   const AddDrinkView({
     super.key,
     this.drinkToEdit,
     this.prefillDrink,
+    this.initialSource,
+    this.skipScan = false,
   });
 
   @override
@@ -53,6 +57,56 @@ class _AddDrinkViewState extends State<AddDrinkView> with SingleTickerProviderSt
   final _typeController = TextEditingController();
   double _rating = 5.0;
   DateTime _selectedDate = DateTime.now();
+  String _selectedMainCategory = 'Öl';
+
+  static const List<String> _mainCategories = [
+    'Öl',
+    'Vin',
+    'Sprit',
+    'Cider',
+    'Likör',
+    'Alkoholfritt',
+    'Övrigt'
+  ];
+
+  String _guessMainCategory(String type, String desc) {
+    final t = '${type.toLowerCase()} ${desc.toLowerCase()}';
+    if (t.contains('öl') || t.contains('ipa') || t.contains('lager') || t.contains('stout') || t.contains('pilsner') || t.contains('ale') || t.contains('porter') || t.contains('saison') || t.contains('apa')) {
+      return 'Öl';
+    }
+    if (t.contains('vin') || t.contains('rött') || t.contains('vitt') || t.contains('rosé') || t.contains('champagne') || t.contains('mousserande') || t.contains('cava') || t.contains('prosecco')) {
+      return 'Vin';
+    }
+    if (t.contains('sprit') || t.contains('whisky') || t.contains('rom') || t.contains('gin') || t.contains('vodka') || t.contains('tequila') || t.contains('cognac') || t.contains('brandy') || t.contains('likör')) {
+      return t.contains('likör') ? 'Likör' : 'Sprit';
+    }
+    if (t.contains('cider')) {
+      return 'Cider';
+    }
+    if (t.contains('alkoholfritt') || t.contains('non-alcoholic') || t.contains('alkoholfri')) {
+      return 'Alkoholfritt';
+    }
+    return 'Övrigt';
+  }
+
+  List<String> get _quickTagsForMainCategory {
+    switch (_selectedMainCategory) {
+      case 'Öl':
+        return ['IPA', 'Lager', 'Stout', 'Pilsner', 'Suröl', 'APA', 'Double IPA', 'Veteöl'];
+      case 'Vin':
+        return ['Rött', 'Vitt', 'Rosé', 'Mousserande', 'Champagne', 'Portvin'];
+      case 'Sprit':
+        return ['Whisky', 'Rom', 'Gin', 'Vodka', 'Tequila', 'Cognac', 'Snaps'];
+      case 'Cider':
+        return ['Äppelcider', 'Päroncider', 'Torr', 'Söt', 'Smaksatt'];
+      case 'Likör':
+        return ['Gräddlikör', 'Kaffelikör', 'Fruktlikör', 'Örtlikör'];
+      case 'Alkoholfritt':
+        return ['Öl', 'Vin', 'Cider', 'Mocktail'];
+      default:
+        return [];
+    }
+  }
 
   // Scanning laser animation
   late AnimationController _animationController;
@@ -92,6 +146,7 @@ class _AddDrinkViewState extends State<AddDrinkView> with SingleTickerProviderSt
       _companionUid = drink.companionUid;
       _countryController.text = drink.country ?? '';
       _selectedDate = drink.createdAt;
+      _selectedMainCategory = drink.mainCategory ?? 'Öl';
     } else if (widget.prefillDrink != null) {
       final drink = widget.prefillDrink!;
       _imageBytes = drink.imageBytes;
@@ -107,8 +162,16 @@ class _AddDrinkViewState extends State<AddDrinkView> with SingleTickerProviderSt
       _companionController.text = drink.companion ?? '';
       _companionUid = drink.companionUid;
       _countryController.text = drink.country ?? '';
+      _selectedMainCategory = drink.mainCategory ?? 'Öl';
     } else {
       _typeController.text = 'Lager';
+      _selectedMainCategory = 'Öl';
+    }
+
+    if (widget.initialSource != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _pickImage(widget.initialSource!);
+      });
     }
   }
 
@@ -144,10 +207,18 @@ class _AddDrinkViewState extends State<AddDrinkView> with SingleTickerProviderSt
 
       if (image != null) {
         final bytes = await image.readAsBytes();
-        setState(() {
-          _imageBytes = bytes;
-          _hasScanned = false;
-        });
+        if (widget.skipScan) {
+          setState(() {
+            _imageBytes = bytes;
+            _hasScanned = true;
+          });
+        } else {
+          setState(() {
+            _imageBytes = bytes;
+            _hasScanned = false;
+          });
+          _runLabelScan();
+        }
       }
     } catch (e) {
       setState(() {
@@ -197,6 +268,12 @@ class _AddDrinkViewState extends State<AddDrinkView> with SingleTickerProviderSt
 
         _typeController.text = detectedType ?? '';
         _countryController.text = cleanCountry;
+        
+        final detectedMain = result['mainCategory'] as String?;
+        _selectedMainCategory = _mainCategories.firstWhere(
+          (m) => m.toLowerCase() == (detectedMain ?? '').trim().toLowerCase(),
+          orElse: () => _guessMainCategory(detectedType ?? '', _descriptionController.text),
+        );
 
         final detectedAbv = result['abv'];
         if (detectedAbv is num) {
@@ -248,15 +325,30 @@ class _AddDrinkViewState extends State<AddDrinkView> with SingleTickerProviderSt
         companion: _companionController.text.trim(),
         companionUid: _companionUid,
         country: _countryController.text.trim(),
+        mainCategory: _selectedMainCategory,
       );
 
       final viewModel = Provider.of<AppViewModel>(context, listen: false);
       await viewModel.addDrink(drink);
 
-      final socialVm = Provider.of<SocialViewModel>(context, listen: false);
-      await socialVm.notifyFriendsOfRating(drink);
-      if (_companionUid != null && _companionUid!.isNotEmpty) {
-        await socialVm.notifyCompanionOfDrink(targetCompanionUid: _companionUid!, drink: drink);
+      final oldDrink = widget.drinkToEdit;
+      final isNew = oldDrink == null;
+      final ratingChanged = !isNew && drink.rating != oldDrink.rating;
+      final companionAdded = (_companionUid != null && _companionUid!.isNotEmpty) &&
+          (isNew || _companionUid != oldDrink.companionUid);
+
+      try {
+        final socialVm = Provider.of<SocialViewModel>(context, listen: false);
+        
+        if (isNew || ratingChanged) {
+          await socialVm.notifyFriendsOfRating(drink);
+        }
+        
+        if (companionAdded) {
+          await socialVm.notifyCompanionOfDrink(targetCompanionUid: _companionUid!, drink: drink);
+        }
+      } catch (socialError) {
+        print('Could not send companion/friend notifications (likely offline): $socialError');
       }
 
       if (mounted) {
@@ -453,96 +545,117 @@ class _AddDrinkViewState extends State<AddDrinkView> with SingleTickerProviderSt
                                   decoration: const InputDecoration(labelText: 'Varumärke / Bryggeri *'),
                                   validator: (v) => v == null || v.trim().isEmpty ? 'Ange varumärke' : null,
                                 ),
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: DropdownButtonFormField<String>(
+                                        value: _selectedMainCategory,
+                                        decoration: const InputDecoration(
+                                          labelText: 'Huvudkategori *',
+                                        ),
+                                        items: _mainCategories.map((cat) {
+                                          return DropdownMenuItem(
+                                            value: cat,
+                                            child: Text(cat),
+                                          );
+                                        }).toList(),
+                                        onChanged: (val) {
+                                          if (val != null) {
+                                            setState(() {
+                                              _selectedMainCategory = val;
+                                            });
+                                          }
+                                        },
+                                      ),
+                                    ),
+                                    const SizedBox(width: 16),
+                                    Expanded(
+                                      child: TextFormField(
+                                        controller: _typeController,
+                                        decoration: const InputDecoration(
+                                          labelText: 'Underkategori / Stil *',
+                                          hintText: 't.ex. IPA, Lager, Rött vin',
+                                        ),
+                                        validator: (v) => v == null || v.trim().isEmpty ? 'Ange underkategori/stil' : null,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                                 const SizedBox(height: 16),
                                 Row(
-                                   children: [
-                                     Expanded(
-                                       flex: 2,
-                                       child: TextFormField(
-                                         controller: _typeController,
-                                         decoration: const InputDecoration(
-                                           labelText: 'Kategori (t.ex. IPA, Lager, Stout) *',
-                                           hintText: 'Lager',
-                                         ),
-                                         validator: (v) => v == null || v.trim().isEmpty ? 'Ange kategori' : null,
-                                       ),
-                                     ),
-                                     const SizedBox(width: 16),
-                                     Expanded(
-                                       flex: 2,
-                                       child: TextFormField(
-                                         controller: _countryController,
-                                         decoration: const InputDecoration(
-                                           labelText: 'Ursprungsland',
-                                           hintText: 'Sverige',
-                                         ),
-                                       ),
-                                     ),
-                                     const SizedBox(width: 16),
-                                     Expanded(
-                                       flex: 1,
-                                       child: TextFormField(
-                                         controller: _abvController,
-                                         decoration: const InputDecoration(labelText: 'Alkoholhalt (%) / ABV', hintText: '5.0'),
-                                         keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                                         validator: (v) {
-                                           if (v != null && v.isNotEmpty && double.tryParse(v) == null) {
-                                             return 'Fel format';
-                                           }
-                                           return null;
-                                         },
-                                       ),
-                                     ),
-                                   ],
-                                 ),
-                                 const SizedBox(height: 12),
-                                 Align(
-                                   alignment: Alignment.centerLeft,
-                                   child: Column(
-                                     crossAxisAlignment: CrossAxisAlignment.start,
-                                     children: [
-                                       const Text(
-                                         'Snabbtaggar (klicka för att lägga till/ta bort):',
-                                         style: TextStyle(fontSize: 12, color: AppTheme.textSecondary, fontWeight: FontWeight.w600),
-                                       ),
-                                       const SizedBox(height: 8),
-                                       Wrap(
-                                         spacing: 6.0,
-                                         runSpacing: 6.0,
-                                         children: [
-                                           'IPA', 'Lager', 'Stout', 'Pilsner', 'Cider', 'Suröl', 'Vin',
-                                           'Sverige', 'Tyskland', 'Belgien', 'USA', 'Storbritannien', 'Tjeckien'
-                                         ].map((tag) {
-                                           final currentText = _typeController.text;
-                                           final tagsList = currentText
-                                               .split(',')
-                                               .map((t) => t.trim())
-                                               .where((t) => t.isNotEmpty)
-                                               .toList();
-                                           final isSelected = tagsList.any((t) => t.toLowerCase() == tag.toLowerCase());
-                                           return FilterChip(
-                                             label: Text(tag, style: const TextStyle(fontSize: 12)),
-                                             selected: isSelected,
-                                             selectedColor: AppTheme.accentGold.withOpacity(0.2),
-                                             checkmarkColor: AppTheme.accentGold,
-                                             onSelected: (selected) {
-                                               setState(() {
-                                                 if (selected) {
-                                                   if (!tagsList.any((t) => t.toLowerCase() == tag.toLowerCase())) {
-                                                     tagsList.add(tag);
-                                                   }
-                                                 } else {
-                                                   tagsList.removeWhere((t) => t.toLowerCase() == tag.toLowerCase());
-                                                 }
-                                                 _typeController.text = tagsList.join(', ');
-                                               });
-                                             },
-                                           );
-                                         }).toList(),
-                                       ),
-                                     ],
-                                   ),
-                                 ),
+                                  children: [
+                                    Expanded(
+                                      child: TextFormField(
+                                        controller: _countryController,
+                                        decoration: const InputDecoration(
+                                          labelText: 'Ursprungsland',
+                                          hintText: 'Sverige',
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 16),
+                                    Expanded(
+                                      child: TextFormField(
+                                        controller: _abvController,
+                                        decoration: const InputDecoration(labelText: 'ABV (%)', hintText: '5.0'),
+                                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                        validator: (v) {
+                                          if (v != null && v.isNotEmpty && double.tryParse(v) == null) {
+                                            return 'Fel format';
+                                          }
+                                          return null;
+                                        },
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                if (_quickTagsForMainCategory.isNotEmpty) ...[
+                                  const SizedBox(height: 12),
+                                  Align(
+                                    alignment: Alignment.centerLeft,
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        const Text(
+                                          'Snabbtaggar (klicka för att välja):',
+                                          style: TextStyle(fontSize: 12, color: AppTheme.textSecondary, fontWeight: FontWeight.w600),
+                                        ),
+                                        const SizedBox(height: 8),
+                                        Wrap(
+                                          spacing: 6.0,
+                                          runSpacing: 6.0,
+                                          children: _quickTagsForMainCategory.map((tag) {
+                                            final currentText = _typeController.text;
+                                            final tagsList = currentText
+                                                .split(',')
+                                                .map((t) => t.trim())
+                                                .where((t) => t.isNotEmpty)
+                                                .toList();
+                                            final isSelected = tagsList.any((t) => t.toLowerCase() == tag.toLowerCase());
+                                            return FilterChip(
+                                              label: Text(tag, style: const TextStyle(fontSize: 12)),
+                                              selected: isSelected,
+                                              selectedColor: AppTheme.accentGold.withOpacity(0.2),
+                                              checkmarkColor: AppTheme.accentGold,
+                                              onSelected: (selected) {
+                                                setState(() {
+                                                  if (selected) {
+                                                    if (!tagsList.any((t) => t.toLowerCase() == tag.toLowerCase())) {
+                                                      tagsList.add(tag);
+                                                    }
+                                                  } else {
+                                                    tagsList.removeWhere((t) => t.toLowerCase() == tag.toLowerCase());
+                                                  }
+                                                  _typeController.text = tagsList.join(', ');
+                                                });
+                                              },
+                                            );
+                                          }).toList(),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
                                 const SizedBox(height: 16),
                                 TextFormField(
                                   controller: _descriptionController,

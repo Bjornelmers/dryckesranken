@@ -71,6 +71,25 @@ class StorageService {
     }
   }
 
+  // Get a single drink from Firestore
+  Future<DrinkModel?> getDrinkFromCloud(String userId, String drinkId) async {
+    try {
+      final doc = await _firestore
+          .collection('users')
+          .doc(userId)
+          .collection('drinks')
+          .doc(drinkId)
+          .get();
+      if (doc.exists && doc.data() != null) {
+        return _fromFirestoreMap(doc.data()!);
+      }
+      return null;
+    } catch (e) {
+      print('Error loading single drink from Firestore: $e');
+      return null;
+    }
+  }
+
   // Save or update a drink in Firestore
   Future<void> saveDrinkToCloud(String userId, DrinkModel drink) async {
     try {

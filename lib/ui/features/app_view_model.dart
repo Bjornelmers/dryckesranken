@@ -127,10 +127,7 @@ class AppViewModel extends ChangeNotifier {
 
       // 2. Apply Type/Category Filter
       final matchesType = _selectedTypeFilter == 'Alla' ||
-          drink.type
-              .split(',')
-              .map((t) => t.trim().toLowerCase())
-              .contains(_selectedTypeFilter.toLowerCase());
+          (drink.mainCategory != null && drink.mainCategory!.trim().toLowerCase() == _selectedTypeFilter.trim().toLowerCase());
 
       // 3. Apply Date Range Filter
       bool matchesDate = true;
@@ -217,16 +214,8 @@ class AppViewModel extends ChangeNotifier {
     return bestCountry;
   }
 
-  // Unique categories currently present in the database (for filters)
   List<String> get availableCategories {
-    final Set<String> categories = {};
-    for (var drink in _drinks) {
-      final tags = drink.type.split(',').map((t) => t.trim()).where((t) => t.isNotEmpty);
-      categories.addAll(tags);
-    }
-    final sortedCategories = categories.toList();
-    sortedCategories.sort();
-    return ['Alla', ...sortedCategories];
+    return ['Alla', 'Öl', 'Vin', 'Sprit', 'Cider', 'Likör', 'Alkoholfritt', 'Övrigt'];
   }
 
   List<String> get availableCountries {

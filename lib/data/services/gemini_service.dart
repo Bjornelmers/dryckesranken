@@ -30,7 +30,8 @@ Identify the drink details and return them strictly in the following JSON format
 {
   "name": "Name of the drink (e.g., Punk IPA, Coca Cola Zero)",
   "brand": "Brand or brewery/producer (e.g., BrewDog, Coca-Cola)",
-  "type": "Select the closest category from this list: IPA, Lager, Stout, Pilsner, Cider, Sour Beer, Soda, Energy Drink, Juice, Water, Wine, Spirits, Other",
+  "mainCategory": "Choose exactly one from this list: Öl, Vin, Sprit, Cider, Likör, Alkoholfritt, Övrigt",
+  "type": "Specific subcategory or style (e.g., IPA, Lager, Stout, Rött vin, Vitt vin, Gin, Rom, Bourbon)",
   "abv": 5.4, // Alcohol by volume (ABV) as a double. Use 0.0 for non-alcoholic.
   "country": "Country of origin if visible or known (e.g., Sweden, Belgium, USA). Return empty string if unknown.",
   "description": "A brief 1-2 sentence description of the drink style or flavor profile extracted or inferred from the label."
@@ -74,6 +75,7 @@ IMPORTANT: If you use double quotes inside string values (like in the descriptio
       {
         'name': 'DIPA Double Dry Hopped',
         'brand': 'O/O Brewing',
+        'mainCategory': 'Öl',
         'type': 'IPA',
         'abv': 8.0,
         'country': 'Sverige',
@@ -82,6 +84,7 @@ IMPORTANT: If you use double quotes inside string values (like in the descriptio
       {
         'name': 'Melleruds Utmärkta Pilsner',
         'brand': 'Spendrups',
+        'mainCategory': 'Öl',
         'type': 'Pilsner',
         'abv': 4.5,
         'country': 'Sverige',
@@ -90,6 +93,7 @@ IMPORTANT: If you use double quotes inside string values (like in the descriptio
       {
         'name': 'Nectarine Cider',
         'brand': 'Kopparbergs',
+        'mainCategory': 'Cider',
         'type': 'Cider',
         'abv': 4.0,
         'country': 'Sverige',
@@ -98,6 +102,7 @@ IMPORTANT: If you use double quotes inside string values (like in the descriptio
       {
         'name': 'Monster Energy Ultra',
         'brand': 'Monster Beverage',
+        'mainCategory': 'Övrigt',
         'type': 'Energy Drink',
         'abv': 0.0,
         'country': 'USA',
@@ -106,6 +111,7 @@ IMPORTANT: If you use double quotes inside string values (like in the descriptio
       {
         'name': 'Coca-Cola Zero Sugar',
         'brand': 'The Coca-Cola Company',
+        'mainCategory': 'Alkoholfritt',
         'type': 'Soda',
         'abv': 0.0,
         'country': 'USA',
@@ -114,7 +120,8 @@ IMPORTANT: If you use double quotes inside string values (like in the descriptio
       {
         'name': 'Negroamaro Zinfandel',
         'brand': 'Castel Forte',
-        'type': 'Wine',
+        'mainCategory': 'Vin',
+        'type': 'Rött vin',
         'abv': 13.5,
         'country': 'Italien',
         'description': 'Fylligt och fruktigt rött vin från Italien med inslag av mörka bär, choklad och kryddor.'

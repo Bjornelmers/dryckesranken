@@ -6,7 +6,6 @@ import '../../../core/theme.dart';
 import '../../settings/views/settings_view.dart';
 import '../../details/views/drink_detail_view.dart';
 import '../../ranking/views/add_drink_view.dart';
-import '../../ranking/views/batch_add_drink_view.dart';
 import '../../social/social_view_model.dart';
 import '../../social/views/friends_view.dart';
 import '../../social/views/notifications_view.dart';
@@ -54,14 +53,26 @@ class DashboardView extends StatelessWidget {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             if (viewModel.isLoggedIn)
-                              CircleAvatar(
-                                radius: 12,
-                                backgroundImage: NetworkImage(
-                                  viewModel.currentUser!.photoURL ??
-                                      'https://www.gravatar.com/avatar/?d=mp',
+                              Tooltip(
+                                message: 'Inställningar',
+                                child: InkWell(
+                                  onTap: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(builder: (context) => const SettingsView()),
+                                    );
+                                  },
+                                  borderRadius: BorderRadius.circular(12),
+                                  child: CircleAvatar(
+                                    radius: 12,
+                                    backgroundImage: NetworkImage(
+                                      viewModel.currentUser!.photoURL ??
+                                          'https://www.gravatar.com/avatar/?d=mp',
+                                    ),
+                                  ),
                                 ),
                               )
-                            else
+                            else ...[
                               TextButton.icon(
                                 onPressed: () => _handleLogin(context, viewModel),
                                 icon: const Icon(Icons.login, size: 12, color: AppTheme.accentGold),
@@ -75,6 +86,20 @@ class DashboardView extends StatelessWidget {
                                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                                 ),
                               ),
+                              const SizedBox(width: 4),
+                              IconButton(
+                                padding: const EdgeInsets.all(4),
+                                constraints: const BoxConstraints(),
+                                icon: const Icon(Icons.settings_outlined, color: AppTheme.textPrimary, size: 18),
+                                tooltip: 'Inställningar',
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(builder: (context) => const SettingsView()),
+                                  );
+                                },
+                              ),
+                            ],
                             Consumer<SocialViewModel>(
                               builder: (context, socialVm, _) {
                                 return Row(
@@ -165,18 +190,7 @@ class DashboardView extends StatelessWidget {
                                 );
                               },
                             ),
-                            const SizedBox(width: 4),
-                            IconButton(
-                              padding: const EdgeInsets.all(4),
-                              constraints: const BoxConstraints(),
-                              icon: const Icon(Icons.settings_outlined, color: AppTheme.textPrimary, size: 18),
-                              onPressed: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(builder: (context) => const SettingsView()),
-                                );
-                              },
-                            ),
+
                           ],
                         ),
                       ],
@@ -633,25 +647,43 @@ class DashboardView extends StatelessWidget {
                             child: Wrap(
                               spacing: 4,
                               runSpacing: 4,
-                              children: drink.type.split(',').map((tag) {
-                                final t = tag.trim();
-                                if (t.isEmpty) return const SizedBox.shrink();
-                                return Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                  decoration: BoxDecoration(
-                                    color: AppTheme.surfaceColor,
-                                    borderRadius: BorderRadius.circular(6),
-                                  ),
-                                  child: Text(
-                                    t,
-                                    style: const TextStyle(
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.w600,
-                                      color: AppTheme.accentCyan,
+                              children: [
+                                if (drink.mainCategory != null && drink.mainCategory!.isNotEmpty)
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: AppTheme.surfaceColor,
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: Text(
+                                      drink.mainCategory!,
+                                      style: const TextStyle(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w600,
+                                        color: AppTheme.accentPink,
+                                      ),
                                     ),
                                   ),
-                                );
-                              }).toList(),
+                                ...drink.type.split(',').map((tag) {
+                                  final t = tag.trim();
+                                  if (t.isEmpty) return const SizedBox.shrink();
+                                  return Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: AppTheme.surfaceColor,
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: Text(
+                                      t,
+                                      style: const TextStyle(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w600,
+                                        color: AppTheme.accentCyan,
+                                      ),
+                                    ),
+                                  );
+                                }).toList(),
+                              ],
                             ),
                           ),
                           Text(
@@ -737,17 +769,45 @@ class DashboardView extends StatelessWidget {
                     color: AppTheme.accentGold.withOpacity(0.15),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: const Icon(Icons.add_photo_alternate, color: AppTheme.accentGold),
+                  child: const Icon(Icons.auto_awesome, color: AppTheme.accentGold),
                 ),
-                title: const Text('Ranka en dryck', style: TextStyle(fontWeight: FontWeight.bold, color: AppTheme.textPrimary)),
-                subtitle: const Text('Ladda upp en bild på en enskild burk eller flaska', style: TextStyle(fontSize: 12, color: AppTheme.textSecondary)),
-                onTap: () {
-                  Navigator.pop(context);
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const AddDrinkView()),
-                  );
-                },
+                title: const Text('Skanna med AI', style: TextStyle(fontWeight: FontWeight.bold, color: AppTheme.textPrimary)),
+                subtitle: const Text('Kamera eller galleri – Gemini läser av etiketten automatiskt', style: TextStyle(fontSize: 12, color: AppTheme.textSecondary)),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.photo_camera, color: AppTheme.accentGold),
+                      onPressed: () {
+                        Navigator.pop(context);
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const AddDrinkView(
+                              initialSource: ImageSource.camera,
+                              skipScan: false,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.photo_library, color: AppTheme.accentGold),
+                      onPressed: () {
+                        Navigator.pop(context);
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const AddDrinkView(
+                              initialSource: ImageSource.gallery,
+                              skipScan: false,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                ),
               ),
               const Divider(color: AppTheme.borderLight, height: 24),
               ListTile(
@@ -755,17 +815,48 @@ class DashboardView extends StatelessWidget {
                 leading: Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: AppTheme.accentCyan.withOpacity(0.15),
+                    color: AppTheme.accentPink.withOpacity(0.15),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: const Icon(Icons.collections, color: AppTheme.accentCyan),
+                  child: const Icon(Icons.edit, color: AppTheme.accentPink),
                 ),
-                title: const Text('Importera album', style: TextStyle(fontWeight: FontWeight.bold, color: AppTheme.textPrimary)),
-                subtitle: const Text('Välj och skanna flera dryckesbilder samtidigt', style: TextStyle(fontSize: 12, color: AppTheme.textSecondary)),
-                onTap: () async {
-                  Navigator.pop(context);
-                  await _pickAndNavigateBatch(context);
-                },
+                title: const Text('Fyll i manuellt', style: TextStyle(fontWeight: FontWeight.bold, color: AppTheme.textPrimary)),
+                subtitle: const Text('Välj bild först men skippa AI-skanningen', style: TextStyle(fontSize: 12, color: AppTheme.textSecondary)),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.photo_camera, color: AppTheme.accentPink),
+                      onPressed: () {
+                        Navigator.pop(context);
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const AddDrinkView(
+                              initialSource: ImageSource.camera,
+                              skipScan: true,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.photo_library, color: AppTheme.accentPink),
+                      onPressed: () {
+                        Navigator.pop(context);
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const AddDrinkView(
+                              initialSource: ImageSource.gallery,
+                              skipScan: true,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
@@ -819,31 +910,7 @@ class DashboardView extends StatelessWidget {
     );
   }
 
-  Future<void> _pickAndNavigateBatch(BuildContext context) async {
-    try {
-      final ImagePicker picker = ImagePicker();
-      final List<XFile> images = await picker.pickMultiImage(
-        maxWidth: 1024,
-        maxHeight: 1024,
-        imageQuality: 85,
-      );
-
-      if (images.isNotEmpty && context.mounted) {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => BatchAddDrinkView(images: images),
-          ),
-        );
-      }
-    } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Kunde inte läsa bilder: $e')),
-        );
-      }
-    }
-  }
+  
 
   Future<void> _handleLogin(BuildContext context, AppViewModel viewModel) async {
     try {

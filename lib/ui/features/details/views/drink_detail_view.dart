@@ -6,11 +6,14 @@ import '../../app_view_model.dart';
 import '../../social/social_view_model.dart';
 import '../../../core/theme.dart';
 
-class DrinkDetailView extends StatelessWidget {
+import 'package:ranking_app/data/services/storage_service.dart';
+
+class DrinkDetailView extends StatefulWidget {
   final String drinkId;
   final DrinkModel? initialDrink;
   final bool isReadOnly;
   final String? friendName;
+  final String? friendUserId;
 
   const DrinkDetailView({
     super.key,
@@ -18,14 +21,76 @@ class DrinkDetailView extends StatelessWidget {
     this.initialDrink,
     this.isReadOnly = false,
     this.friendName,
+    this.friendUserId,
   });
 
   @override
+  State<DrinkDetailView> createState() => _DrinkDetailViewState();
+}
+
+class _DrinkDetailViewState extends State<DrinkDetailView> {
+  DrinkModel? _loadedDrink;
+  bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.initialDrink == null) {
+      // Check if we already have it in local viewmodel, if not, load it
+      final appVm = Provider.of<AppViewModel>(context, listen: false);
+      final hasLocal = appVm.allDrinks.any((d) => d.id == widget.drinkId);
+      if (!hasLocal) {
+        _loadDrink();
+      }
+    }
+  }
+
+  Future<void> _loadDrink() async {
+    setState(() {
+      _isLoading = true;
+    });
+    try {
+      final appVm = Provider.of<AppViewModel>(context, listen: false);
+      final userId = widget.friendUserId ?? (appVm.isLoggedIn ? appVm.currentUser!.uid : null);
+      if (userId != null) {
+        final storage = StorageService();
+        final drink = await storage.getDrinkFromCloud(userId, widget.drinkId);
+        if (mounted) {
+          setState(() {
+            _loadedDrink = drink;
+            _isLoading = false;
+          });
+        }
+      } else {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      print('Error loading drink details: $e');
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Dryckesdetaljer')),
+        body: const Center(
+          child: CircularProgressIndicator(color: AppTheme.accentGold),
+        ),
+      );
+    }
+
     return Consumer<AppViewModel>(
       builder: (context, viewModel, _) {
-        final drinkIndex = viewModel.allDrinks.indexWhere((d) => d.id == drinkId);
-        final DrinkModel? targetDrink = initialDrink ?? (drinkIndex != -1 ? viewModel.allDrinks[drinkIndex] : null);
+        final drinkIndex = viewModel.allDrinks.indexWhere((d) => d.id == widget.drinkId);
+        final DrinkModel? targetDrink = widget.initialDrink ?? _loadedDrink ?? (drinkIndex != -1 ? viewModel.allDrinks[drinkIndex] : null);
 
         if (targetDrink == null) {
           return Scaffold(
@@ -36,7 +101,7 @@ class DrinkDetailView extends StatelessWidget {
           );
         }
         final DrinkModel drink = targetDrink;
-        final bool canEdit = !isReadOnly && drinkIndex != -1;
+        final bool canEdit = !widget.isReadOnly && drinkIndex != -1;
         final bool hasAlreadyRated = viewModel.allDrinks.any((d) =>
             d.name.toLowerCase().trim() == drink.name.toLowerCase().trim() &&
             d.brand.toLowerCase().trim() == drink.brand.toLowerCase().trim());
@@ -143,6 +208,26 @@ class DrinkDetailView extends StatelessWidget {
                                       ),
                                     ),
                                   ],
+                                  if (drink.mainCategory != null && drink.mainCategory!.isNotEmpty)
+                                    Padding(
+                                      padding: const EdgeInsets.only(right: 6),
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                        decoration: BoxDecoration(
+                                          color: AppTheme.accentPink.withOpacity(0.15),
+                                          borderRadius: BorderRadius.circular(8),
+                                          border: Border.all(color: AppTheme.accentPink.withOpacity(0.4)),
+                                        ),
+                                        child: Text(
+                                          drink.mainCategory!,
+                                          style: const TextStyle(
+                                            color: AppTheme.accentPink,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
                                   ...drink.type.split(',').map((tag) {
                                     final t = tag.trim();
                                     if (t.isEmpty) return const SizedBox.shrink();
@@ -290,7 +375,7 @@ class DrinkDetailView extends StatelessWidget {
                           if (drink.comment.isNotEmpty) ...[
                             // Comment section
                             Text(
-                              isReadOnly ? '${friendName ?? "Vännens"} recension' : 'Din recension',
+                              widget.isReadOnly ? '${widget.friendName ?? "Vännens"} recension' : 'Din recension',
                               style: Theme.of(context).textTheme.titleLarge,
                             ),
                             const SizedBox(height: 10),
@@ -450,7 +535,7 @@ class DrinkDetailView extends StatelessWidget {
                                    const SizedBox(height: 28),
 
                                    // Dedicated "Ditt betyg" section when viewing a friend's drink
-                                   if (isReadOnly && matchingOwnDrink != null) ...[
+                                   if (widget.isReadOnly && matchingOwnDrink != null) ...[
                                      Text(
                                        'Ditt betyg',
                                        style: Theme.of(context).textTheme.titleLarge,
@@ -521,7 +606,7 @@ class DrinkDetailView extends StatelessWidget {
                                        final filteredRatings = ratings.where((item) {
                                          final name = item['friendName'] as String? ?? '';
                                          // Exclude friend whose profile we are looking at
-                                         if (isReadOnly && name.toLowerCase() == friendName?.toLowerCase()) {
+                                         if (widget.isReadOnly && name.toLowerCase() == widget.friendName?.toLowerCase()) {
                                            return false;
                                          }
                                          // Exclude current user (us)
@@ -541,7 +626,7 @@ class DrinkDetailView extends StatelessWidget {
                                                  const SizedBox(width: 12),
                                                  Expanded(
                                                    child: Text(
-                                                     isReadOnly
+                                                     widget.isReadOnly
                                                          ? 'Ingen av dina andra vänner har betygsatt denna dryck än.'
                                                          : 'Ingen av dina vänner har betygsatt denna dryck än.',
                                                      style: const TextStyle(color: AppTheme.textSecondary, fontSize: 13),

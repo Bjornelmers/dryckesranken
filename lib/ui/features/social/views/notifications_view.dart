@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../social_view_model.dart';
 import '../../../core/theme.dart';
 import 'user_profile_view.dart';
+import '../../details/views/drink_detail_view.dart';
 
 class NotificationsView extends StatelessWidget {
   const NotificationsView({super.key});
@@ -14,6 +15,20 @@ class NotificationsView extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Notiscenter'),
+        actions: [
+          if (socialVm.notifications.any((n) => !(n['read'] as bool? ?? false)))
+            Padding(
+              padding: const EdgeInsets.only(right: 8.0),
+              child: TextButton.icon(
+                onPressed: () => socialVm.markAllNotificationsAsRead(),
+                icon: const Icon(Icons.done_all, color: AppTheme.accentGold, size: 18),
+                label: const Text(
+                  'Markera alla som lästa',
+                  style: TextStyle(color: AppTheme.accentGold, fontWeight: FontWeight.bold, fontSize: 12),
+                ),
+              ),
+            ),
+        ],
       ),
       body: socialVm.notifications.isEmpty
           ? Center(
@@ -58,7 +73,21 @@ class NotificationsView extends StatelessWidget {
                   child: InkWell(
                     borderRadius: BorderRadius.circular(12),
                     onTap: () {
-                      if (fromUserId != null && fromUserId.isNotEmpty) {
+                      socialVm.markNotificationAsRead(notifId);
+                      final drinkId = notif['drinkId'] as String?;
+                      if (drinkId != null && drinkId.isNotEmpty && fromUserId != null && fromUserId.isNotEmpty && type != 'friend_request') {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => DrinkDetailView(
+                              drinkId: drinkId,
+                              isReadOnly: true,
+                              friendName: fromName,
+                              friendUserId: fromUserId,
+                            ),
+                          ),
+                        );
+                      } else if (fromUserId != null && fromUserId.isNotEmpty) {
                         Navigator.push(
                           context,
                           MaterialPageRoute(

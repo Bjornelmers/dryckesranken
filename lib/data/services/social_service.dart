@@ -265,6 +265,26 @@ class SocialService {
     }
   }
 
+  // Mark all notifications as read
+  Future<void> markAllNotificationsAsRead(String userId) async {
+    try {
+      final unreadSnap = await _firestore
+          .collection('users')
+          .doc(userId)
+          .collection('notifications')
+          .where('read', isEqualTo: false)
+          .get();
+      
+      final batch = _firestore.batch();
+      for (var doc in unreadSnap.docs) {
+        batch.update(doc.reference, {'read': true});
+      }
+      await batch.commit();
+    } catch (e) {
+      print('Error marking all notifications as read: $e');
+    }
+  }
+
   Future<void> sendNotification({
     required String targetUserId,
     required String type,
