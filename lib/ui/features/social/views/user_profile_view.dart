@@ -283,7 +283,11 @@ class _UserProfileViewState extends State<UserProfileView> {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => DrinkDetailView(drinkId: drink.id),
+              builder: (context) => DrinkDetailView(
+                drinkId: drink.id,
+                drink: drink,
+                isReadOnly: true,
+              ),
             ),
           );
         },

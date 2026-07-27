@@ -8,22 +8,33 @@ import '../../../core/theme.dart';
 
 class DrinkDetailView extends StatelessWidget {
   final String drinkId;
+  final DrinkModel? drink;
+  final bool isReadOnly;
 
-  const DrinkDetailView({super.key, required this.drinkId});
+  const DrinkDetailView({
+    super.key,
+    required this.drinkId,
+    this.drink,
+    this.isReadOnly = false,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Consumer<AppViewModel>(
       builder: (context, viewModel, _) {
         final drinkIndex = viewModel.allDrinks.indexWhere((d) => d.id == drinkId);
-        if (drinkIndex == -1) {
-          return const Scaffold(
-            body: Center(
-              child: CircularProgressIndicator(color: AppTheme.accentGold),
+        final DrinkModel? targetDrink = drink ?? (drinkIndex != -1 ? viewModel.allDrinks[drinkIndex] : null);
+
+        if (targetDrink == null) {
+          return Scaffold(
+            appBar: AppBar(title: const Text('Dryckesdetaljer')),
+            body: const Center(
+              child: Text('Kunde inte hitta drycken.', style: TextStyle(color: AppTheme.textSecondary)),
             ),
           );
         }
-        final drink = viewModel.allDrinks[drinkIndex];
+        final drink = targetDrink;
+        final bool canEdit = !isReadOnly && drinkIndex != -1;
 
         return Scaffold(
           body: CustomScrollView(
@@ -33,14 +44,16 @@ class DrinkDetailView extends StatelessWidget {
                 expandedHeight: MediaQuery.of(context).size.height * 0.45,
                 pinned: true,
                 actions: [
-                  IconButton(
-                    icon: const Icon(Icons.edit_outlined, color: Colors.white),
-                    onPressed: () => _editDrink(context, drink),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.delete_outline, color: Colors.white),
-                    onPressed: () => _confirmDelete(context, viewModel, drink.name),
-                  ),
+                  if (canEdit) ...[
+                    IconButton(
+                      icon: const Icon(Icons.edit_outlined, color: Colors.white),
+                      onPressed: () => _editDrink(context, drinkToDisplay),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.delete_outline, color: Colors.white),
+                      onPressed: () => _confirmDelete(context, viewModel, drinkToDisplay.name),
+                    ),
+                  ],
                 ],
                 flexibleSpace: FlexibleSpaceBar(
                   background: drink.imageBytes != null

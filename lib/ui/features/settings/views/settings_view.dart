@@ -490,7 +490,16 @@ class _SettingsViewState extends State<SettingsView> {
                                 minimumSize: const Size.fromHeight(50),
                               ),
                               onPressed: () {
-                                html.window.location.reload();
+                                try {
+                                  if (html.window.navigator.serviceWorker != null) {
+                                    html.window.navigator.serviceWorker!.getRegistrations().then((registrations) {
+                                      for (var reg in registrations) {
+                                        reg.unregister();
+                                      }
+                                    });
+                                  }
+                                } catch (_) {}
+                                html.window.location.href = html.window.location.origin;
                               },
                               icon: const Icon(Icons.cached),
                               label: const Text('Ladda om och uppdatera appen'),
