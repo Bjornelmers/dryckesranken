@@ -31,28 +31,12 @@ class _BatchAddDrinkViewState extends State<BatchAddDrinkView> with SingleTicker
   final _descriptionController = TextEditingController();
   final _commentController = TextEditingController();
 
-  String _selectedType = 'Lager';
+  final _typeController = TextEditingController();
   double _rating = 5.0;
 
   // Scanning laser animation
   late AnimationController _animationController;
   late Animation<double> _laserAnimation;
-
-  final List<String> _drinkTypes = [
-    'IPA',
-    'Lager',
-    'Stout',
-    'Pilsner',
-    'Cider',
-    'Sour Beer',
-    'Soda',
-    'Energy Drink',
-    'Juice',
-    'Water',
-    'Wine',
-    'Spirits',
-    'Other'
-  ];
 
   @override
   void initState() {
@@ -83,6 +67,7 @@ class _BatchAddDrinkViewState extends State<BatchAddDrinkView> with SingleTicker
     _nameController.dispose();
     _brandController.dispose();
     _abvController.dispose();
+    _typeController.dispose();
     _descriptionController.dispose();
     _commentController.dispose();
     super.dispose();
@@ -104,7 +89,7 @@ class _BatchAddDrinkViewState extends State<BatchAddDrinkView> with SingleTicker
       _descriptionController.clear();
       _commentController.clear();
       _rating = 5.0;
-      _selectedType = 'Lager';
+      _typeController.text = 'Lager';
     });
 
     try {
@@ -125,11 +110,33 @@ class _BatchAddDrinkViewState extends State<BatchAddDrinkView> with SingleTicker
         _descriptionController.text = result['description'] ?? '';
 
         final detectedType = result['type'] as String?;
-        if (detectedType != null && _drinkTypes.contains(detectedType)) {
-          _selectedType = detectedType;
-        } else {
-          _selectedType = 'Other';
+        final detectedCountry = result['country'] as String?;
+        
+        String cleanCountry = '';
+        if (detectedCountry != null && detectedCountry.trim().isNotEmpty) {
+          final c = detectedCountry.trim().toLowerCase();
+          if (c == 'sweden') cleanCountry = 'Sverige';
+          else if (c == 'germany') cleanCountry = 'Tyskland';
+          else if (c == 'belgium') cleanCountry = 'Belgien';
+          else if (c == 'usa' || c == 'united states') cleanCountry = 'USA';
+          else if (c == 'united kingdom' || c == 'uk' || c == 'england') cleanCountry = 'Storbritannien';
+          else if (c == 'czech republic') cleanCountry = 'Tjeckien';
+          else {
+            cleanCountry = detectedCountry.trim();
+            if (cleanCountry.isNotEmpty) {
+              cleanCountry = cleanCountry[0].toUpperCase() + cleanCountry.substring(1);
+            }
+          }
         }
+
+        final List<String> tags = [];
+        if (detectedType != null && detectedType.isNotEmpty) {
+          tags.add(detectedType);
+        }
+        if (cleanCountry.isNotEmpty) {
+          tags.add(cleanCountry);
+        }
+        _typeController.text = tags.join(', ');
 
         final detectedAbv = result['abv'];
         if (detectedAbv is num) {
@@ -165,7 +172,7 @@ class _BatchAddDrinkViewState extends State<BatchAddDrinkView> with SingleTicker
       id: DateTime.now().microsecondsSinceEpoch.toString(),
       name: _nameController.text.trim(),
       brand: _brandController.text.trim(),
-      type: _selectedType,
+      type: _typeController.text.split(',').map((t) => t.trim()).where((t) => t.isNotEmpty).join(', '),
       abv: abv,
       rating: _rating,
       comment: _commentController.text.trim(),
@@ -342,19 +349,13 @@ class _BatchAddDrinkViewState extends State<BatchAddDrinkView> with SingleTicker
                                         children: [
                                           Expanded(
                                             flex: 2,
-                                            child: DropdownButtonFormField<String>(
-                                              value: _selectedType,
-                                              decoration: const InputDecoration(labelText: 'Dryckestyp'),
-                                              items: _drinkTypes
-                                                  .map((type) => DropdownMenuItem(value: type, child: Text(type)))
-                                                  .toList(),
-                                              onChanged: (val) {
-                                                if (val != null) {
-                                                  setState(() {
-                                                    _selectedType = val;
-                                                  });
-                                                }
-                                              },
+                                            child: TextFormField(
+                                              controller: _typeController,
+                                              decoration: const InputDecoration(
+                                                labelText: 'Kategorier / Taggar (t.ex. Lager, Sverige)',
+                                                hintText: 'Lager, Sverige',
+                                              ),
+                                              validator: (v) => v == null || v.trim().isEmpty ? 'Ange minst en kategori' : null,
                                             ),
                                           ),
                                           const SizedBox(width: 16),
@@ -373,6 +374,54 @@ class _BatchAddDrinkViewState extends State<BatchAddDrinkView> with SingleTicker
                                             ),
                                           ),
                                         ],
+                                      ),
+                                      const SizedBox(height: 12),
+                                      Align(
+                                        alignment: Alignment.centerLeft,
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            const Text(
+                                              'Snabbtaggar (klicka för att lägga till/ta bort):',
+                                              style: TextStyle(fontSize: 12, color: AppTheme.textSecondary, fontWeight: FontWeight.w600),
+                                            ),
+                                            const SizedBox(height: 8),
+                                            Wrap(
+                                              spacing: 6.0,
+                                              runSpacing: 6.0,
+                                              children: [
+                                                'IPA', 'Lager', 'Stout', 'Pilsner', 'Cider', 'Suröl', 'Vin',
+                                                'Sverige', 'Tyskland', 'Belgien', 'USA', 'Storbritannien', 'Tjeckien'
+                                              ].map((tag) {
+                                                final currentText = _typeController.text;
+                                                final tagsList = currentText
+                                                    .split(',')
+                                                    .map((t) => t.trim())
+                                                    .where((t) => t.isNotEmpty)
+                                                    .toList();
+                                                final isSelected = tagsList.any((t) => t.toLowerCase() == tag.toLowerCase());
+                                                return FilterChip(
+                                                  label: Text(tag, style: const TextStyle(fontSize: 12)),
+                                                  selected: isSelected,
+                                                  selectedColor: AppTheme.accentGold.withOpacity(0.2),
+                                                  checkmarkColor: AppTheme.accentGold,
+                                                  onSelected: (selected) {
+                                                    setState(() {
+                                                      if (selected) {
+                                                        if (!tagsList.any((t) => t.toLowerCase() == tag.toLowerCase())) {
+                                                          tagsList.add(tag);
+                                                        }
+                                                      } else {
+                                                        tagsList.removeWhere((t) => t.toLowerCase() == tag.toLowerCase());
+                                                      }
+                                                      _typeController.text = tagsList.join(', ');
+                                                    });
+                                                  },
+                                                );
+                                              }).toList(),
+                                            ),
+                                          ],
+                                        ),
                                       ),
                                       const SizedBox(height: 16),
                                       TextFormField(

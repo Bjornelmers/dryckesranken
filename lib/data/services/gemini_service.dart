@@ -32,6 +32,7 @@ Identify the drink details and return them strictly in the following JSON format
   "brand": "Brand or brewery/producer (e.g., BrewDog, Coca-Cola)",
   "type": "Select the closest category from this list: IPA, Lager, Stout, Pilsner, Cider, Sour Beer, Soda, Energy Drink, Juice, Water, Wine, Spirits, Other",
   "abv": 5.4, // Alcohol by volume (ABV) as a double. Use 0.0 for non-alcoholic.
+  "country": "Country of origin if visible or known (e.g., Sweden, Belgium, USA). Return empty string if unknown.",
   "description": "A brief 1-2 sentence description of the drink style or flavor profile extracted or inferred from the label."
 }
 Make sure the returned text is a single valid JSON object.
@@ -63,7 +64,6 @@ IMPORTANT: If you use double quotes inside string values (like in the descriptio
       return parsedJson;
     } catch (e) {
       print('Gemini Scan Error: $e');
-      // If real scan fails, throw error so UI can display it
       throw Exception('Det gick inte att läsa av etiketten. Kontrollera din API-nyckel och bildkvalitet. ($e)');
     }
   }
@@ -76,6 +76,7 @@ IMPORTANT: If you use double quotes inside string values (like in the descriptio
         'brand': 'O/O Brewing',
         'type': 'IPA',
         'abv': 8.0,
+        'country': 'Sverige',
         'description': 'En intensiv och humlearomatisk dubbel IPA med toner av mango, citrus och barrskog.'
       },
       {
@@ -83,6 +84,7 @@ IMPORTANT: If you use double quotes inside string values (like in the descriptio
         'brand': 'Spendrups',
         'type': 'Pilsner',
         'abv': 4.5,
+        'country': 'Sverige',
         'description': 'En klassisk svensk ekologisk pilsner med balanserad beska och ren, maltig smak.'
       },
       {
@@ -90,6 +92,7 @@ IMPORTANT: If you use double quotes inside string values (like in the descriptio
         'brand': 'Kopparbergs',
         'type': 'Cider',
         'abv': 4.0,
+        'country': 'Sverige',
         'description': 'Söt och uppfriskande äppelcider med en tydlig karaktär av solmogen nektarin.'
       },
       {
@@ -97,6 +100,7 @@ IMPORTANT: If you use double quotes inside string values (like in the descriptio
         'brand': 'Monster Beverage',
         'type': 'Energy Drink',
         'abv': 0.0,
+        'country': 'USA',
         'description': 'Kolsyrad energidryck utan socker, berikad med taurin, ginseng, koffein och B-vitaminer.'
       },
       {
@@ -104,6 +108,7 @@ IMPORTANT: If you use double quotes inside string values (like in the descriptio
         'brand': 'The Coca-Cola Company',
         'type': 'Soda',
         'abv': 0.0,
+        'country': 'USA',
         'description': 'Klassisk uppfriskande läskedryck med colasmak helt utan socker och kalorier.'
       },
       {
@@ -111,6 +116,7 @@ IMPORTANT: If you use double quotes inside string values (like in the descriptio
         'brand': 'Castel Forte',
         'type': 'Wine',
         'abv': 13.5,
+        'country': 'Italien',
         'description': 'Fylligt och fruktigt rött vin från Italien med inslag av mörka bär, choklad och kryddor.'
       }
     ];

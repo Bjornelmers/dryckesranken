@@ -1,3 +1,4 @@
+import 'dart:html' as html;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../app_view_model.dart';
@@ -180,8 +181,7 @@ class _ApiKeySetupViewState extends State<ApiKeySetupView> {
                           const SizedBox(height: 20),
                           InkWell(
                             onTap: () {
-                              // We open Google AI Studio in a new tab
-                              // Since we don't have url_launcher, we can print it or let user copy it.
+                              html.window.open('https://aistudio.google.com/app/apikey', '_blank');
                             },
                             child: const Text(
                               'Hämta en gratis Gemini API-nyckel från Google AI Studio',

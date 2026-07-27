@@ -97,7 +97,11 @@ class AppViewModel extends ChangeNotifier {
           drink.comment.toLowerCase().contains(_searchQuery.toLowerCase());
 
       // 2. Apply Type/Category Filter
-      final matchesType = _selectedTypeFilter == 'Alla' || drink.type == _selectedTypeFilter;
+      final matchesType = _selectedTypeFilter == 'Alla' ||
+          drink.type
+              .split(',')
+              .map((t) => t.trim().toLowerCase())
+              .contains(_selectedTypeFilter.toLowerCase());
 
       return matchesSearch && matchesType;
     }).toList();
@@ -118,18 +122,21 @@ class AppViewModel extends ChangeNotifier {
   String get favoriteType {
     if (_drinks.isEmpty) return 'Ingen';
     
-    // Group drinks by type and calculate average rating for each type
-    final Map<String, List<double>> typeRatings = {};
+    // Group drinks by tag and calculate average rating for each tag
+    final Map<String, List<double>> tagRatings = {};
     for (var drink in _drinks) {
-      typeRatings.putIfAbsent(drink.type, () => []).add(drink.rating);
+      final tags = drink.type.split(',').map((t) => t.trim()).where((t) => t.isNotEmpty);
+      for (var tag in tags) {
+        tagRatings.putIfAbsent(tag, () => []).add(drink.rating);
+      }
     }
 
     String bestType = 'Ingen';
     double bestAverage = 0.0;
 
-    typeRatings.forEach((type, ratings) {
+    tagRatings.forEach((type, ratings) {
       final avg = ratings.reduce((a, b) => a + b) / ratings.length;
-      if (avg > bestAverage || (avg == bestAverage && ratings.length > (typeRatings[bestType]?.length ?? 0))) {
+      if (avg > bestAverage || (avg == bestAverage && ratings.length > (tagRatings[bestType]?.length ?? 0))) {
         bestAverage = avg;
         bestType = type;
       }
@@ -140,9 +147,14 @@ class AppViewModel extends ChangeNotifier {
 
   // Unique categories currently present in the database (for filters)
   List<String> get availableCategories {
-    final categories = _drinks.map((d) => d.type).toSet().toList();
-    categories.sort();
-    return ['Alla', ...categories];
+    final Set<String> categories = {};
+    for (var drink in _drinks) {
+      final tags = drink.type.split(',').map((t) => t.trim()).where((t) => t.isNotEmpty);
+      categories.addAll(tags);
+    }
+    final sortedCategories = categories.toList();
+    sortedCategories.sort();
+    return ['Alla', ...sortedCategories];
   }
 
   // Actions

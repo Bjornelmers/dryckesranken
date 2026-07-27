@@ -330,9 +330,7 @@ class _SettingsViewState extends State<SettingsView> {
                             const SizedBox(height: 16),
                             InkWell(
                               onTap: () {
-                                // Direct web link to Google AI Studio API Keys page
-                                // Note: In Flutter Web, url_launcher is usually used, but we can also use html window if needed.
-                                // Since we don't have url_launcher, we can print it or let user copy it.
+                                html.window.open('https://aistudio.google.com/app/apikey', '_blank');
                               },
                               child: const Text(
                                 'Hämta en gratis Gemini API-nyckel från Google AI Studio',

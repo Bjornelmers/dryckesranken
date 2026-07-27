@@ -92,21 +92,30 @@ class DrinkDetailView extends StatelessWidget {
                             children: [
                               Row(
                                 children: [
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                                    decoration: BoxDecoration(
-                                      color: AppTheme.accentCyan.withOpacity(0.15),
-                                      borderRadius: BorderRadius.circular(8),
-                                      border: Border.all(color: AppTheme.accentCyan.withOpacity(0.4)),
-                                    ),
-                                    child: Text(
-                                      drink.type,
-                                      style: const TextStyle(
-                                        color: AppTheme.accentCyan,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 12,
-                                      ),
-                                    ),
+                                  Row(
+                                    children: drink.type.split(',').map((tag) {
+                                      final t = tag.trim();
+                                      if (t.isEmpty) return const SizedBox.shrink();
+                                      return Padding(
+                                        padding: const EdgeInsets.only(right: 6),
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                          decoration: BoxDecoration(
+                                            color: AppTheme.accentCyan.withOpacity(0.15),
+                                            borderRadius: BorderRadius.circular(8),
+                                            border: Border.all(color: AppTheme.accentCyan.withOpacity(0.4)),
+                                          ),
+                                          child: Text(
+                                            t,
+                                            style: const TextStyle(
+                                              color: AppTheme.accentCyan,
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 12,
+                                            ),
+                                          ),
+                                        ),
+                                      );
+                                    }).toList(),
                                   ),
                                   const SizedBox(width: 8),
                                   Container(
