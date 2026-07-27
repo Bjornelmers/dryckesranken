@@ -8,7 +8,9 @@ import 'package:ranking_app/ui/core/theme.dart';
 import '../../app_view_model.dart';
 
 class AddDrinkView extends StatefulWidget {
-  const AddDrinkView({super.key});
+  final DrinkModel? drinkToEdit;
+
+  const AddDrinkView({super.key, this.drinkToEdit});
 
   @override
   State<AddDrinkView> createState() => _AddDrinkViewState();
@@ -72,6 +74,20 @@ class _AddDrinkViewState extends State<AddDrinkView> with SingleTickerProviderSt
           _animationController.forward();
         }
       });
+
+    // Pre-populate if editing
+    if (widget.drinkToEdit != null) {
+      final drink = widget.drinkToEdit!;
+      _imageBytes = drink.imageBytes;
+      _hasScanned = true;
+      _nameController.text = drink.name;
+      _brandController.text = drink.brand;
+      _abvController.text = drink.abv.toString();
+      _descriptionController.text = drink.scannedDescription;
+      _commentController.text = drink.comment;
+      _selectedType = drink.type;
+      _rating = drink.rating;
+    }
   }
 
   @override
@@ -168,8 +184,9 @@ class _AddDrinkViewState extends State<AddDrinkView> with SingleTickerProviderSt
 
     final abv = double.tryParse(_abvController.text) ?? 0.0;
     
-    final newDrink = DrinkModel(
-      id: DateTime.now().microsecondsSinceEpoch.toString(),
+    final isEditing = widget.drinkToEdit != null;
+    final drink = DrinkModel(
+      id: isEditing ? widget.drinkToEdit!.id : DateTime.now().microsecondsSinceEpoch.toString(),
       name: _nameController.text.trim(),
       brand: _brandController.text.trim(),
       type: _selectedType,
@@ -178,16 +195,18 @@ class _AddDrinkViewState extends State<AddDrinkView> with SingleTickerProviderSt
       comment: _commentController.text.trim(),
       imageBytes: _imageBytes,
       scannedDescription: _descriptionController.text.trim(),
-      createdAt: DateTime.now(),
+      createdAt: isEditing ? widget.drinkToEdit!.createdAt : DateTime.now(),
     );
 
     final viewModel = Provider.of<AppViewModel>(context, listen: false);
-    await viewModel.addDrink(newDrink);
+    await viewModel.addDrink(drink);
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('${newDrink.name} sparades framgångsrikt!'),
+          content: Text(isEditing
+              ? '${drink.name} har uppdaterats!'
+              : '${drink.name} sparades framgångsrikt!'),
           backgroundColor: AppTheme.ratingGreen,
         ),
       );
@@ -201,7 +220,7 @@ class _AddDrinkViewState extends State<AddDrinkView> with SingleTickerProviderSt
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Ranka Ny Dryck'),
+        title: Text(widget.drinkToEdit != null ? 'Redigera Dryck' : 'Ranka Ny Dryck'),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 10.0),

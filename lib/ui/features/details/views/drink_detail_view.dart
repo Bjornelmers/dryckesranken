@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:ranking_app/data/models/drink_model.dart';
+import '../../ranking/views/add_drink_view.dart';
 import '../../app_view_model.dart';
 import '../../../core/theme.dart';
 
@@ -30,6 +32,10 @@ class DrinkDetailView extends StatelessWidget {
                 expandedHeight: MediaQuery.of(context).size.height * 0.45,
                 pinned: true,
                 actions: [
+                  IconButton(
+                    icon: const Icon(Icons.edit_outlined, color: Colors.white),
+                    onPressed: () => _editDrink(context, drink),
+                  ),
                   IconButton(
                     icon: const Icon(Icons.delete_outline, color: Colors.white),
                     onPressed: () => _confirmDelete(context, viewModel, drink.name),
@@ -309,6 +315,15 @@ class DrinkDetailView extends StatelessWidget {
           ],
         );
       },
+    );
+  }
+
+  void _editDrink(BuildContext context, DrinkModel drink) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => AddDrinkView(drinkToEdit: drink),
+      ),
     );
   }
 }
