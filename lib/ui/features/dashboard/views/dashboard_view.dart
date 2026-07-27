@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import '../../app_view_model.dart';
 import '../../../core/theme.dart';
 import '../../settings/views/settings_view.dart';
 import '../../details/views/drink_detail_view.dart';
 import '../../ranking/views/add_drink_view.dart';
+import '../../ranking/views/batch_add_drink_view.dart';
 
 class DashboardView extends StatelessWidget {
   const DashboardView({super.key});
@@ -123,15 +125,10 @@ class DashboardView extends StatelessWidget {
         },
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const AddDrinkView()),
-          );
-        },
-        icon: const Icon(Icons.add_photo_alternate),
+        onPressed: () => _showAddOptions(context),
+        icon: const Icon(Icons.add),
         label: const Text(
-          'Ranka dryck',
+          'Lägg till',
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
       ),
@@ -473,6 +470,102 @@ class DashboardView extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  void _showAddOptions(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
+          decoration: const BoxDecoration(
+            color: AppTheme.surfaceColor,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+            border: Border(top: BorderSide(color: AppTheme.borderLight, width: 1.5)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Lägg till dryck',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: AppTheme.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 16),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppTheme.accentGold.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(Icons.add_photo_alternate, color: AppTheme.accentGold),
+                ),
+                title: const Text('Ranka en dryck', style: TextStyle(fontWeight: FontWeight.bold, color: AppTheme.textPrimary)),
+                subtitle: const Text('Ladda upp en bild på en enskild burk eller flaska', style: TextStyle(fontSize: 12, color: AppTheme.textSecondary)),
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const AddDrinkView()),
+                  );
+                },
+              ),
+              const Divider(color: AppTheme.borderLight, height: 24),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppTheme.accentCyan.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(Icons.collections, color: AppTheme.accentCyan),
+                ),
+                title: const Text('Importera album', style: TextStyle(fontWeight: FontWeight.bold, color: AppTheme.textPrimary)),
+                subtitle: const Text('Välj och skanna flera dryckesbilder samtidigt', style: TextStyle(fontSize: 12, color: AppTheme.textSecondary)),
+                onTap: () async {
+                  Navigator.pop(context);
+                  await _pickAndNavigateBatch(context);
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _pickAndNavigateBatch(BuildContext context) async {
+    try {
+      final ImagePicker picker = ImagePicker();
+      final List<XFile> images = await picker.pickMultiImage(
+        maxWidth: 1024,
+        maxHeight: 1024,
+        imageQuality: 85,
+      );
+
+      if (images.isNotEmpty && context.mounted) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => BatchAddDrinkView(images: images),
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Kunde inte läsa bilder: $e')),
+        );
+      }
+    }
   }
 }
 
