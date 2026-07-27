@@ -285,7 +285,7 @@ class _UserProfileViewState extends State<UserProfileView> {
             MaterialPageRoute(
               builder: (context) => DrinkDetailView(
                 drinkId: drink.id,
-                drink: drink,
+                initialDrink: drink,
                 isReadOnly: true,
               ),
             ),

@@ -8,13 +8,13 @@ import '../../../core/theme.dart';
 
 class DrinkDetailView extends StatelessWidget {
   final String drinkId;
-  final DrinkModel? drink;
+  final DrinkModel? initialDrink;
   final bool isReadOnly;
 
   const DrinkDetailView({
     super.key,
     required this.drinkId,
-    this.drink,
+    this.initialDrink,
     this.isReadOnly = false,
   });
 
@@ -23,7 +23,7 @@ class DrinkDetailView extends StatelessWidget {
     return Consumer<AppViewModel>(
       builder: (context, viewModel, _) {
         final drinkIndex = viewModel.allDrinks.indexWhere((d) => d.id == drinkId);
-        final DrinkModel? targetDrink = drink ?? (drinkIndex != -1 ? viewModel.allDrinks[drinkIndex] : null);
+        final DrinkModel? targetDrink = initialDrink ?? (drinkIndex != -1 ? viewModel.allDrinks[drinkIndex] : null);
 
         if (targetDrink == null) {
           return Scaffold(
@@ -33,7 +33,7 @@ class DrinkDetailView extends StatelessWidget {
             ),
           );
         }
-        final drink = targetDrink;
+        final DrinkModel drink = targetDrink;
         final bool canEdit = !isReadOnly && drinkIndex != -1;
 
         return Scaffold(
@@ -47,11 +47,11 @@ class DrinkDetailView extends StatelessWidget {
                   if (canEdit) ...[
                     IconButton(
                       icon: const Icon(Icons.edit_outlined, color: Colors.white),
-                      onPressed: () => _editDrink(context, drinkToDisplay),
+                      onPressed: () => _editDrink(context, drink),
                     ),
                     IconButton(
                       icon: const Icon(Icons.delete_outline, color: Colors.white),
-                      onPressed: () => _confirmDelete(context, viewModel, drinkToDisplay.name),
+                      onPressed: () => _confirmDelete(context, viewModel, drink.name),
                     ),
                   ],
                 ],
