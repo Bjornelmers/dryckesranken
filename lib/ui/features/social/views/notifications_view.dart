@@ -209,6 +209,8 @@ class NotificationsView extends StatelessWidget {
         return Icons.star;
       case 'recommendation':
         return Icons.thumb_up;
+      case 'drinking_companion':
+        return Icons.sports_bar;
       default:
         return Icons.notifications;
     }
@@ -224,6 +226,8 @@ class NotificationsView extends StatelessWidget {
         return AppTheme.accentGold;
       case 'recommendation':
         return AppTheme.accentPink;
+      case 'drinking_companion':
+        return AppTheme.accentGold;
       default:
         return AppTheme.accentCyan;
     }

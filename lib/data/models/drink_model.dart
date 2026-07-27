@@ -11,6 +11,9 @@ class DrinkModel {
   final Uint8List? imageBytes;
   final String scannedDescription;
   final DateTime createdAt;
+  final String? location;
+  final String? companion;
+  final String? companionUid;
 
   DrinkModel({
     required this.id,
@@ -23,9 +26,12 @@ class DrinkModel {
     this.imageBytes,
     required this.scannedDescription,
     required this.createdAt,
+    this.location,
+    this.companion,
+    this.companionUid,
   });
 
-  // Convert DrinkModel to a Map for Hive storage
+  // Convert DrinkModel to a Map for Hive/Firestore storage
   Map<String, dynamic> toMap() {
     return {
       'id': id,
@@ -35,13 +41,16 @@ class DrinkModel {
       'abv': abv,
       'rating': rating,
       'comment': comment,
-      'imageBytes': imageBytes, // Hive natively supports Uint8List
+      'imageBytes': imageBytes,
       'scannedDescription': scannedDescription,
       'createdAt': createdAt.toIso8601String(),
+      'location': location,
+      'companion': companion,
+      'companionUid': companionUid,
     };
   }
 
-  // Create DrinkModel from a Map retrieved from Hive
+  // Create DrinkModel from a Map
   factory DrinkModel.fromMap(Map<dynamic, dynamic> map) {
     return DrinkModel(
       id: map['id'] as String,
@@ -56,6 +65,9 @@ class DrinkModel {
       createdAt: map['createdAt'] != null
           ? DateTime.parse(map['createdAt'] as String)
           : DateTime.now(),
+      location: map['location'] as String?,
+      companion: map['companion'] as String?,
+      companionUid: map['companionUid'] as String?,
     );
   }
 
@@ -71,6 +83,9 @@ class DrinkModel {
     Uint8List? imageBytes,
     String? scannedDescription,
     DateTime? createdAt,
+    String? location,
+    String? companion,
+    String? companionUid,
   }) {
     return DrinkModel(
       id: id ?? this.id,
@@ -83,6 +98,9 @@ class DrinkModel {
       imageBytes: imageBytes ?? this.imageBytes,
       scannedDescription: scannedDescription ?? this.scannedDescription,
       createdAt: createdAt ?? this.createdAt,
+      location: location ?? this.location,
+      companion: companion ?? this.companion,
+      companionUid: companionUid ?? this.companionUid,
     );
   }
 }

@@ -241,6 +241,26 @@ class SocialViewModel extends ChangeNotifier {
     );
   }
 
+  Future<void> notifyCompanionOfDrink({
+    required String targetCompanionUid,
+    required DrinkModel drink,
+  }) async {
+    if (_currentUserId == null) return;
+    await _socialService.sendNotification(
+      targetUserId: targetCompanionUid,
+      type: 'drinking_companion',
+      title: 'Drack med dig! 🍻',
+      message: '$_currentUserName drack precis "${drink.name}" med dig!',
+      fromUserId: _currentUserId!,
+      fromUserName: _currentUserName!,
+      fromUserPhoto: _currentUserPhoto,
+      drinkId: drink.id,
+      drinkName: drink.name,
+      drinkBrand: drink.brand,
+      drinkType: drink.type,
+    );
+  }
+
   Future<void> addToWishlist({
     required String drinkName,
     required String brand,

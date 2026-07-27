@@ -35,6 +35,9 @@ class DrinkDetailView extends StatelessWidget {
         }
         final DrinkModel drink = targetDrink;
         final bool canEdit = !isReadOnly && drinkIndex != -1;
+        final bool hasAlreadyRated = viewModel.allDrinks.any((d) =>
+            d.name.toLowerCase().trim() == drink.name.toLowerCase().trim() &&
+            d.brand.toLowerCase().trim() == drink.brand.toLowerCase().trim());
 
         return Scaffold(
           body: CustomScrollView(
@@ -187,28 +190,30 @@ class DrinkDetailView extends StatelessWidget {
                                         color: AppTheme.accentGold,
                                       ),
                                     ),
-                                    const SizedBox(height: 24),
-                                    ElevatedButton.icon(
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: AppTheme.accentGold,
-                                        foregroundColor: Colors.black,
-                                        minimumSize: const Size.fromHeight(50),
-                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                    if (!hasAlreadyRated) ...[
+                                      const SizedBox(height: 24),
+                                      ElevatedButton.icon(
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: AppTheme.accentGold,
+                                          foregroundColor: Colors.black,
+                                          minimumSize: const Size.fromHeight(50),
+                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                        ),
+                                        onPressed: () {
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (context) => AddDrinkView(prefillDrink: drink),
+                                            ),
+                                          );
+                                        },
+                                        icon: const Icon(Icons.rate_review, size: 20),
+                                        label: const Text(
+                                          'Gör egen recension',
+                                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                        ),
                                       ),
-                                      onPressed: () {
-                                        Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder: (context) => AddDrinkView(prefillDrink: drink),
-                                          ),
-                                        );
-                                      },
-                                      icon: const Icon(Icons.rate_review, size: 20),
-                                      label: const Text(
-                                        'Gör egen recension',
-                                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                                      ),
-                                    ),
+                                    ],
                                   ],
                                 ),
                               ),
@@ -279,6 +284,54 @@ class DrinkDetailView extends StatelessWidget {
                               ),
                             ),
                           ),
+                          if ((drink.location != null && drink.location!.isNotEmpty) ||
+                              (drink.companion != null && drink.companion!.isNotEmpty)) ...[
+                            const SizedBox(height: 16),
+                            Card(
+                              child: Padding(
+                                padding: const EdgeInsets.all(16.0),
+                                child: Column(
+                                  children: [
+                                    if (drink.location != null && drink.location!.isNotEmpty)
+                                      Padding(
+                                        padding: const EdgeInsets.symmetric(vertical: 4.0),
+                                        child: Row(
+                                          children: [
+                                            const Icon(Icons.location_on, color: AppTheme.accentGold, size: 18),
+                                            const SizedBox(width: 10),
+                                            Expanded(
+                                              child: Text(
+                                                'Dracks på ${drink.location}',
+                                                style: const TextStyle(color: AppTheme.textPrimary, fontSize: 14),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    if (drink.location != null && drink.location!.isNotEmpty &&
+                                        drink.companion != null && drink.companion!.isNotEmpty)
+                                      const Divider(height: 12, thickness: 0.5, color: Colors.white24),
+                                    if (drink.companion != null && drink.companion!.isNotEmpty)
+                                      Padding(
+                                        padding: const EdgeInsets.symmetric(vertical: 4.0),
+                                        child: Row(
+                                          children: [
+                                            const Icon(Icons.people, color: AppTheme.accentGold, size: 18),
+                                            const SizedBox(width: 10),
+                                            Expanded(
+                                              child: Text(
+                                                'Tillsammans med ${drink.companion}',
+                                                style: const TextStyle(color: AppTheme.textPrimary, fontSize: 14),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
                           const SizedBox(height: 28),
 
                           // AI label description section

@@ -265,6 +265,34 @@ class SocialService {
     }
   }
 
+  Future<void> sendNotification({
+    required String targetUserId,
+    required String type,
+    required String title,
+    required String message,
+    required String fromUserId,
+    required String fromUserName,
+    required String? fromUserPhoto,
+    String? drinkId,
+    String? drinkName,
+    String? drinkBrand,
+    String? drinkType,
+  }) async {
+    await _createNotification(
+      toUserId: targetUserId,
+      type: type,
+      title: title,
+      message: message,
+      fromUserId: fromUserId,
+      fromUserName: fromUserName,
+      fromUserPhoto: fromUserPhoto,
+      drinkId: drinkId,
+      drinkName: drinkName,
+      drinkBrand: drinkBrand,
+      drinkType: drinkType,
+    );
+  }
+
   // Internal helper to push a notification document
   Future<void> _createNotification({
     required String toUserId,

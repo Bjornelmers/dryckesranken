@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'dart:html' as html;
 import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -40,6 +43,10 @@ class _AddDrinkViewState extends State<AddDrinkView> with SingleTickerProviderSt
   final _abvController = TextEditingController();
   final _descriptionController = TextEditingController();
   final _commentController = TextEditingController();
+  final _locationController = TextEditingController();
+  final _companionController = TextEditingController();
+  String? _companionUid;
+  bool _isLocating = false;
   
   final _typeController = TextEditingController();
   double _rating = 5.0;
@@ -77,6 +84,9 @@ class _AddDrinkViewState extends State<AddDrinkView> with SingleTickerProviderSt
       _commentController.text = drink.comment;
       _typeController.text = drink.type;
       _rating = drink.rating;
+      _locationController.text = drink.location ?? '';
+      _companionController.text = drink.companion ?? '';
+      _companionUid = drink.companionUid;
     } else if (widget.prefillDrink != null) {
       final drink = widget.prefillDrink!;
       _imageBytes = drink.imageBytes;
@@ -88,6 +98,9 @@ class _AddDrinkViewState extends State<AddDrinkView> with SingleTickerProviderSt
       _typeController.text = drink.type;
       _commentController.text = '';
       _rating = 5.0;
+      _locationController.text = drink.location ?? '';
+      _companionController.text = drink.companion ?? '';
+      _companionUid = drink.companionUid;
     } else {
       _typeController.text = 'Lager';
     }
@@ -102,6 +115,8 @@ class _AddDrinkViewState extends State<AddDrinkView> with SingleTickerProviderSt
     _typeController.dispose();
     _descriptionController.dispose();
     _commentController.dispose();
+    _locationController.dispose();
+    _companionController.dispose();
     super.dispose();
   }
 
@@ -222,6 +237,9 @@ class _AddDrinkViewState extends State<AddDrinkView> with SingleTickerProviderSt
       imageBytes: _imageBytes,
       scannedDescription: _descriptionController.text.trim(),
       createdAt: isEditing ? widget.drinkToEdit!.createdAt : DateTime.now(),
+      location: _locationController.text.trim(),
+      companion: _companionController.text.trim(),
+      companionUid: _companionUid,
     );
 
     final viewModel = Provider.of<AppViewModel>(context, listen: false);
@@ -229,6 +247,9 @@ class _AddDrinkViewState extends State<AddDrinkView> with SingleTickerProviderSt
 
     final socialVm = Provider.of<SocialViewModel>(context, listen: false);
     await socialVm.notifyFriendsOfRating(drink);
+    if (_companionUid != null && _companionUid!.isNotEmpty) {
+      await socialVm.notifyCompanionOfDrink(targetCompanionUid: _companionUid!, drink: drink);
+    }
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -497,14 +518,58 @@ class _AddDrinkViewState extends State<AddDrinkView> with SingleTickerProviderSt
                                   ),
                                 ),
                                 const SizedBox(height: 24),
-                                TextFormField(
-                                  controller: _commentController,
-                                  decoration: const InputDecoration(
-                                    labelText: 'Recension / Kommentar (valfritt)',
-                                    hintText: 'Hur smakade den? Vad tycker du?',
-                                  ),
-                                  maxLines: 3,
-                                ),
+                                 TextFormField(
+                                   controller: _commentController,
+                                   decoration: const InputDecoration(
+                                     labelText: 'Recension / Kommentar (valfritt)',
+                                     hintText: 'Hur smakade den? Vad tycker du?',
+                                   ),
+                                   maxLines: 3,
+                                 ),
+                                 const SizedBox(height: 24),
+                                 Row(
+                                   children: [
+                                     Expanded(
+                                       child: TextFormField(
+                                         controller: _locationController,
+                                         decoration: InputDecoration(
+                                           labelText: 'Var dracks den? (valfritt)',
+                                           hintText: _isLocating ? 'Hämtar plats...' : 'T.ex. Stockholm, Sverige',
+                                           prefixIcon: const Icon(Icons.location_on, color: AppTheme.accentGold),
+                                         ),
+                                       ),
+                                     ),
+                                     const SizedBox(width: 8),
+                                     IconButton(
+                                       icon: _isLocating 
+                                           ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: AppTheme.accentGold))
+                                           : const Icon(Icons.my_location, color: AppTheme.accentGold),
+                                       tooltip: 'Hämta min nuvarande position',
+                                       onPressed: _getCurrentLocation,
+                                     ),
+                                   ],
+                                 ),
+                                 const SizedBox(height: 24),
+                                 Row(
+                                   children: [
+                                     Expanded(
+                                       child: TextFormField(
+                                         controller: _companionController,
+                                         decoration: const InputDecoration(
+                                           labelText: 'Med vem dracks den? (valfritt)',
+                                           hintText: 'T.ex. Johan, Mamma eller välj vän',
+                                           prefixIcon: Icon(Icons.people, color: AppTheme.accentGold),
+                                         ),
+                                       ),
+                                     ),
+                                     const SizedBox(width: 8),
+                                     IconButton(
+                                       icon: const Icon(Icons.person_add, color: AppTheme.accentGold),
+                                       tooltip: 'Välj vän från appen',
+                                       onPressed: () => _showFriendPicker(context),
+                                     ),
+                                   ],
+                                 ),
                               ],
                             ),
                           ),
@@ -676,4 +741,118 @@ class _AddDrinkViewState extends State<AddDrinkView> with SingleTickerProviderSt
       ),
     );
   }
+  Future<void> _getCurrentLocation() async {
+    setState(() {
+      _isLocating = true;
+    });
+
+    try {
+      if (html.window.navigator.geolocation != null) {
+        html.window.navigator.geolocation.getCurrentPosition().then((pos) async {
+          final coords = pos.coords;
+          if (coords != null && coords.latitude != null && coords.longitude != null) {
+            final lat = coords.latitude;
+            final lng = coords.longitude;
+
+            final url = Uri.parse('https://nominatim.openstreetmap.org/reverse?format=json&lat=$lat&lon=$lng');
+            final response = await http.get(url, headers: {'User-Agent': 'Dryckesranken_App'});
+            if (response.statusCode == 200) {
+              final data = jsonDecode(response.body);
+              final address = data['address'] as Map?;
+              if (address != null) {
+                final city = address['city'] ?? address['town'] ?? address['village'] ?? address['suburb'] ?? '';
+                final country = address['country'] ?? '';
+                setState(() {
+                  _locationController.text = city.isNotEmpty ? '$city, $country' : country;
+                  _isLocating = false;
+                });
+              } else {
+                setState(() {
+                  _locationController.text = '$lat, $lng';
+                  _isLocating = false;
+                });
+              }
+            } else {
+              setState(() {
+                _locationController.text = '$lat, $lng';
+                _isLocating = false;
+              });
+            }
+          } else {
+            setState(() {
+              _isLocating = false;
+            });
+          }
+        }, onError: (err) {
+          setState(() {
+            _isLocating = false;
+          });
+        });
+      } else {
+        setState(() {
+          _isLocating = false;
+        });
+      }
+    } catch (_) {
+      setState(() {
+        _isLocating = false;
+      });
+    }
+  }
+
+  void _showFriendPicker(BuildContext context) {
+    final socialVm = Provider.of<SocialViewModel>(context, listen: false);
+    if (socialVm.friends.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Du har inga tillagda vänner än.')),
+      );
+      return;
+    }
+
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (ctx) {
+        return Container(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Välj vem du drack med:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+              const SizedBox(height: 16),
+              Expanded(
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: socialVm.friends.length,
+                  itemBuilder: (context, index) {
+                    final friend = socialVm.friends[index];
+                    final name = friend['displayName'] as String? ?? 'Vän';
+                    final photo = friend['photoURL'] as String?;
+                    final uid = friend['uid'] as String;
+
+                    return ListTile(
+                      leading: CircleAvatar(
+                        backgroundImage: photo != null ? NetworkImage(photo) : null,
+                        child: photo == null ? Text(name[0].toUpperCase()) : null,
+                      ),
+                      title: Text(name),
+                      onTap: () {
+                        setState(() {
+                          _companionController.text = name;
+                          _companionUid = uid;
+                        });
+                        Navigator.pop(ctx);
+                      },
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
 }
+
