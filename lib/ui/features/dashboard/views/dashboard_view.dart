@@ -26,153 +26,162 @@ class DashboardView extends StatelessWidget {
               SliverAppBar(
                 floating: true,
                 pinned: true,
-                expandedHeight: 100.0,
-                flexibleSpace: FlexibleSpaceBar(
-                  title: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Row(
-                        children: [
-                          Icon(Icons.sports_bar, color: AppTheme.accentGold, size: 28),
-                          SizedBox(width: 8),
-                          Text(
-                            'DryckesRanken',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: -0.5,
-                              color: AppTheme.textPrimary,
-                            ),
-                          ),
-                        ],
-                      ),
-                      Row(
-                        children: [
-                          if (viewModel.isLoggedIn) ...[
-                            CircleAvatar(
-                              radius: 14,
-                              backgroundImage: NetworkImage(
-                                viewModel.currentUser!.photoURL ??
-                                    'https://www.gravatar.com/avatar/?d=mp',
-                              ),
-                            ),
-                          ] else ...[
-                            TextButton.icon(
-                              onPressed: () => _handleLogin(context, viewModel),
-                              icon: const Icon(Icons.login, size: 14, color: AppTheme.accentGold),
-                              label: const Text(
-                                'Logga in',
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.bold,
-                                  color: AppTheme.accentGold,
-                                ),
-                              ),
-                              style: TextButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(6),
-                                  side: const BorderSide(color: AppTheme.accentGold, width: 1),
-                                ),
+                titleSpacing: 12,
+                title: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final isMobile = constraints.maxWidth < 420;
+                    return Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        // App Logo & Title
+                        Row(
+                          children: [
+                            const Icon(Icons.sports_bar, color: AppTheme.accentGold, size: 24),
+                            const SizedBox(width: 6),
+                            Text(
+                              'DryckesRanken',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: -0.5,
+                                fontSize: isMobile ? 14 : 18,
+                                color: AppTheme.textPrimary,
                               ),
                             ),
                           ],
-                          Consumer<SocialViewModel>(
-                            builder: (context, socialVm, _) {
-                              return Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  // Wishlist Icon
-                                  IconButton(
-                                    icon: const Icon(Icons.bookmark_outline, color: AppTheme.textPrimary, size: 20),
-                                    tooltip: 'Borde-prova-lista',
-                                    onPressed: () {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(builder: (context) => const WishlistView()),
-                                      );
-                                    },
-                                  ),
-                                  // Friends Icon
-                                  Stack(
-                                    children: [
-                                      IconButton(
-                                        icon: const Icon(Icons.people_outline, color: AppTheme.textPrimary, size: 20),
-                                        tooltip: 'Vänner',
-                                        onPressed: () {
-                                          Navigator.push(
-                                            context,
-                                            MaterialPageRoute(builder: (context) => const FriendsView()),
-                                          );
-                                        },
-                                      ),
-                                      if (socialVm.pendingRequestsCount > 0)
-                                        Positioned(
-                                          right: 4,
-                                          top: 4,
-                                          child: Container(
-                                            padding: const EdgeInsets.all(4),
-                                            decoration: const BoxDecoration(
-                                              color: AppTheme.accentGold,
-                                              shape: BoxShape.circle,
-                                            ),
-                                            child: Text(
-                                              '${socialVm.pendingRequestsCount}',
-                                              style: const TextStyle(color: Colors.black, fontSize: 9, fontWeight: FontWeight.bold),
+                        ),
+                        // Right Actions (Avatar, Wishlist, Friends, Notifications, Settings)
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (viewModel.isLoggedIn)
+                              CircleAvatar(
+                                radius: 12,
+                                backgroundImage: NetworkImage(
+                                  viewModel.currentUser!.photoURL ??
+                                      'https://www.gravatar.com/avatar/?d=mp',
+                                ),
+                              )
+                            else
+                              TextButton.icon(
+                                onPressed: () => _handleLogin(context, viewModel),
+                                icon: const Icon(Icons.login, size: 12, color: AppTheme.accentGold),
+                                label: const Text(
+                                  'Logga in',
+                                  style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppTheme.accentGold),
+                                ),
+                                style: TextButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                                  minimumSize: Size.zero,
+                                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                ),
+                              ),
+                            Consumer<SocialViewModel>(
+                              builder: (context, socialVm, _) {
+                                return Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    // Wishlist Icon
+                                    IconButton(
+                                      padding: const EdgeInsets.all(4),
+                                      constraints: const BoxConstraints(),
+                                      icon: const Icon(Icons.bookmark_outline, color: AppTheme.textPrimary, size: 18),
+                                      tooltip: 'Borde-prova-lista',
+                                      onPressed: () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(builder: (context) => const WishlistView()),
+                                        );
+                                      },
+                                    ),
+                                    const SizedBox(width: 4),
+                                    // Friends Icon
+                                    Stack(
+                                      children: [
+                                        IconButton(
+                                          padding: const EdgeInsets.all(4),
+                                          constraints: const BoxConstraints(),
+                                          icon: const Icon(Icons.people_outline, color: AppTheme.textPrimary, size: 18),
+                                          tooltip: 'Vänner',
+                                          onPressed: () {
+                                            Navigator.push(
+                                              context,
+                                              MaterialPageRoute(builder: (context) => const FriendsView()),
+                                            );
+                                          },
+                                        ),
+                                        if (socialVm.pendingRequestsCount > 0)
+                                          Positioned(
+                                            right: 0,
+                                            top: 0,
+                                            child: Container(
+                                              padding: const EdgeInsets.all(3),
+                                              decoration: const BoxDecoration(
+                                                color: AppTheme.accentGold,
+                                                shape: BoxShape.circle,
+                                              ),
+                                              child: Text(
+                                                '${socialVm.pendingRequestsCount}',
+                                                style: const TextStyle(color: Colors.black, fontSize: 8, fontWeight: FontWeight.bold),
+                                              ),
                                             ),
                                           ),
+                                      ],
+                                    ),
+                                    const SizedBox(width: 4),
+                                    // Notification Bell Icon
+                                    Stack(
+                                      children: [
+                                        IconButton(
+                                          padding: const EdgeInsets.all(4),
+                                          constraints: const BoxConstraints(),
+                                          icon: const Icon(Icons.notifications_none, color: AppTheme.textPrimary, size: 18),
+                                          tooltip: 'Notiser',
+                                          onPressed: () {
+                                            Navigator.push(
+                                              context,
+                                              MaterialPageRoute(builder: (context) => const NotificationsView()),
+                                            );
+                                          },
                                         ),
-                                    ],
-                                  ),
-                                  // Notification Bell Icon
-                                  Stack(
-                                    children: [
-                                      IconButton(
-                                        icon: const Icon(Icons.notifications_none, color: AppTheme.textPrimary, size: 20),
-                                        tooltip: 'Notiser',
-                                        onPressed: () {
-                                          Navigator.push(
-                                            context,
-                                            MaterialPageRoute(builder: (context) => const NotificationsView()),
-                                          );
-                                        },
-                                      ),
-                                      if (socialVm.unreadNotificationsCount > 0)
-                                        Positioned(
-                                          right: 4,
-                                          top: 4,
-                                          child: Container(
-                                            padding: const EdgeInsets.all(4),
-                                            decoration: const BoxDecoration(
-                                              color: AppTheme.accentPink,
-                                              shape: BoxShape.circle,
-                                            ),
-                                            child: Text(
-                                              '${socialVm.unreadNotificationsCount}',
-                                              style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold),
+                                        if (socialVm.unreadNotificationsCount > 0)
+                                          Positioned(
+                                            right: 0,
+                                            top: 0,
+                                            child: Container(
+                                              padding: const EdgeInsets.all(3),
+                                              decoration: const BoxDecoration(
+                                                color: AppTheme.accentPink,
+                                                shape: BoxShape.circle,
+                                              ),
+                                              child: Text(
+                                                '${socialVm.unreadNotificationsCount}',
+                                                style: const TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.bold),
+                                              ),
                                             ),
                                           ),
-                                        ),
-                                    ],
-                                  ),
-                                ],
-                              );
-                            },
-                          ),
-                          const SizedBox(width: 4),
-                          IconButton(
-                            icon: const Icon(Icons.settings_outlined, color: AppTheme.textPrimary, size: 20),
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(builder: (context) => const SettingsView()),
-                              );
-                            },
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                  titlePadding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
+                                      ],
+                                    ),
+                                  ],
+                                );
+                              },
+                            ),
+                            const SizedBox(width: 4),
+                            IconButton(
+                              padding: const EdgeInsets.all(4),
+                              constraints: const BoxConstraints(),
+                              icon: const Icon(Icons.settings_outlined, color: AppTheme.textPrimary, size: 18),
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(builder: (context) => const SettingsView()),
+                                );
+                              },
+                            ),
+                          ],
+                        ),
+                      ],
+                    );
+                  },
                 ),
               ),
 
