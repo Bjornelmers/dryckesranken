@@ -162,3 +162,7 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 >>>>>>> 37ddd4a (Initial commit of DryckesRanken PWA)
+
+# Firebase CLI
+firebase_cli
+firepit-log.txt

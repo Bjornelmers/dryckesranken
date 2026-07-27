@@ -57,6 +57,174 @@ class _SettingsViewState extends State<SettingsView> {
                     ),
                     const SizedBox(height: 24),
 
+                    // Firebase Google Account Sync Card
+                    Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(20.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                const Icon(Icons.cloud_sync, color: AppTheme.accentCyan, size: 28),
+                                const SizedBox(width: 12),
+                                Text(
+                                  'Konto & Molnsynkronisering',
+                                  style: Theme.of(context).textTheme.titleLarge,
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 16),
+                            if (viewModel.isLoggedIn) ...[
+                              // Logged in state
+                              Row(
+                                children: [
+                                  CircleAvatar(
+                                    radius: 28,
+                                    backgroundImage: NetworkImage(
+                                      viewModel.currentUser!.photoURL ??
+                                          'https://www.gravatar.com/avatar/?d=mp',
+                                    ),
+                                  ),
+                                  const SizedBox(width: 16),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          viewModel.currentUser!.displayName ?? 'Inloggad användare',
+                                          style: const TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.bold,
+                                            color: AppTheme.textPrimary,
+                                          ),
+                                        ),
+                                        Text(
+                                          viewModel.currentUser!.email ?? '',
+                                          style: const TextStyle(
+                                            fontSize: 14,
+                                            color: AppTheme.textSecondary,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 20),
+                              if (viewModel.hasLocalOfflineDrinks) ...[
+                                Container(
+                                  padding: const EdgeInsets.all(12),
+                                  margin: const EdgeInsets.only(bottom: 16),
+                                  decoration: BoxDecoration(
+                                    color: AppTheme.accentGold.withOpacity(0.15),
+                                    borderRadius: BorderRadius.circular(10),
+                                    border: Border.all(color: AppTheme.accentGold.withOpacity(0.3)),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      const Icon(Icons.offline_bolt_outlined, color: AppTheme.accentGold),
+                                      const SizedBox(width: 12),
+                                      const Expanded(
+                                        child: Text(
+                                          'Du har drycker sparade lokalt på den här enheten som inte finns i ditt molnkonto ännu.',
+                                          style: TextStyle(fontSize: 13, color: AppTheme.textPrimary),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                ElevatedButton.icon(
+                                  style: ElevatedButton.styleFrom(
+                                    minimumSize: const Size.fromHeight(50),
+                                    backgroundColor: AppTheme.accentGold,
+                                    foregroundColor: Colors.black,
+                                  ),
+                                  onPressed: () async {
+                                    final count = await viewModel.migrateLocalDrinksToCloud();
+                                    if (context.mounted) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(
+                                          content: Text('$count lokala drycker har synkats till molnet!'),
+                                          backgroundColor: AppTheme.ratingGreen,
+                                        ),
+                                      );
+                                    }
+                                  },
+                                  icon: const Icon(Icons.cloud_upload),
+                                  label: const Text('Synka lokal data till molnet'),
+                                ),
+                                const SizedBox(height: 12),
+                              ],
+                              OutlinedButton.icon(
+                                style: OutlinedButton.styleFrom(
+                                  minimumSize: const Size.fromHeight(50),
+                                  side: const BorderSide(color: AppTheme.borderLight, width: 1.5),
+                                ),
+                                onPressed: () async {
+                                  await viewModel.signOut();
+                                  if (context.mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(content: Text('Du har loggat ut.')),
+                                    );
+                                  }
+                                },
+                                icon: const Icon(Icons.logout),
+                                label: const Text('Logga ut'),
+                              ),
+                            ] else ...[
+                              // Logged out state
+                              const Text(
+                                'Logga in med ditt Google-konto för att automatiskt spara och synkronisera dina drycker i molnet. Då kan du nå dina betyg och recensioner från alla dina enheter!',
+                                style: TextStyle(color: AppTheme.textSecondary, fontSize: 14),
+                              ),
+                              const SizedBox(height: 20),
+                              ElevatedButton.icon(
+                                style: ElevatedButton.styleFrom(
+                                  minimumSize: const Size.fromHeight(52),
+                                  backgroundColor: Colors.white,
+                                  foregroundColor: Colors.black,
+                                ),
+                                onPressed: () async {
+                                  try {
+                                    await viewModel.signInWithGoogle();
+                                    if (context.mounted) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(
+                                          content: Text('Välkommen, ${viewModel.currentUser!.displayName ?? "inloggad"}!'),
+                                          backgroundColor: AppTheme.ratingGreen,
+                                        ),
+                                      );
+                                    }
+                                  } catch (e) {
+                                    if (context.mounted) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(
+                                          content: Text('Kunde inte logga in: $e'),
+                                          backgroundColor: AppTheme.ratingRed,
+                                        ),
+                                      );
+                                    }
+                                  }
+                                },
+                                icon: Image.network(
+                                  'https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg',
+                                  height: 20,
+                                  width: 20,
+                                  errorBuilder: (_, __, ___) => const Icon(Icons.login),
+                                ),
+                                label: const Text(
+                                  'Logga in med Google',
+                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+
                     // Gemini API Key card
                     Card(
                       child: Padding(

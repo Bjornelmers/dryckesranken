@@ -41,14 +41,48 @@ class DashboardView extends StatelessWidget {
                           ),
                         ],
                       ),
-                      IconButton(
-                        icon: const Icon(Icons.settings_outlined, color: AppTheme.textPrimary),
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (context) => const SettingsView()),
-                          );
-                        },
+                      Row(
+                        children: [
+                          if (viewModel.isLoggedIn) ...[
+                            CircleAvatar(
+                              radius: 14,
+                              backgroundImage: NetworkImage(
+                                viewModel.currentUser!.photoURL ??
+                                    'https://www.gravatar.com/avatar/?d=mp',
+                              ),
+                            ),
+                          ] else ...[
+                            TextButton.icon(
+                              onPressed: () => _handleLogin(context, viewModel),
+                              icon: const Icon(Icons.login, size: 14, color: AppTheme.accentGold),
+                              label: const Text(
+                                'Logga in',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppTheme.accentGold,
+                                ),
+                              ),
+                              style: TextButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(6),
+                                  side: const BorderSide(color: AppTheme.accentGold, width: 1),
+                                ),
+                              ),
+                            ),
+                          ],
+                          const SizedBox(width: 8),
+                          IconButton(
+                            icon: const Icon(Icons.settings_outlined, color: AppTheme.textPrimary),
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(builder: (context) => const SettingsView()),
+                              );
+                            },
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -563,6 +597,29 @@ class DashboardView extends StatelessWidget {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Kunde inte läsa bilder: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _handleLogin(BuildContext context, AppViewModel viewModel) async {
+    try {
+      await viewModel.signInWithGoogle();
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Välkommen, ${viewModel.currentUser!.displayName ?? "inloggad"}!'),
+            backgroundColor: AppTheme.ratingGreen,
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Kunde inte logga in: $e'),
+            backgroundColor: AppTheme.ratingRed,
+          ),
         );
       }
     }
