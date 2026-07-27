@@ -85,8 +85,27 @@ class _UserProfileViewState extends State<UserProfileView> {
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator(color: AppTheme.accentGold))
-          : CustomScrollView(
-              slivers: [
+          : _errorMessage.isNotEmpty
+              ? Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24.0),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.error_outline, color: AppTheme.accentPink, size: 48),
+                        const SizedBox(height: 16),
+                        Text(_errorMessage, style: const TextStyle(color: AppTheme.textPrimary), textAlign: TextAlign.center),
+                        const SizedBox(height: 16),
+                        ElevatedButton(
+                          onPressed: _loadUserProfileAndDrinks,
+                          child: const Text('Försök igen'),
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+              : CustomScrollView(
+                  slivers: [
                 // User Profile Header Card
                 SliverToBoxAdapter(
                   child: Padding(
