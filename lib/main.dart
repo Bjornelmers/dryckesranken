@@ -10,6 +10,8 @@ import 'ui/features/dashboard/views/dashboard_view.dart';
 import 'ui/features/auth/views/login_view.dart';
 import 'ui/features/auth/views/api_key_setup_view.dart';
 
+import 'ui/features/social/social_view_model.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
@@ -26,8 +28,11 @@ void main() async {
   await viewModel.init();
 
   runApp(
-    ChangeNotifierProvider<AppViewModel>.value(
-      value: viewModel,
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider<AppViewModel>.value(value: viewModel),
+        ChangeNotifierProvider<SocialViewModel>(create: (_) => SocialViewModel()),
+      ],
       child: const MyApp(),
     ),
   );
@@ -61,6 +66,26 @@ class AppHomeSelector extends StatelessWidget {
             ),
           );
         }
+
+        // Sync social view model with active user context
+        final socialVm = Provider.of<SocialViewModel>(context, listen: false);
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (viewModel.isLoggedIn) {
+            socialVm.updateUserContext(
+              userId: viewModel.currentUser?.uid,
+              userName: viewModel.currentUser?.displayName,
+              userPhoto: viewModel.currentUser?.photoURL,
+              userEmail: viewModel.currentUser?.email,
+            );
+          } else {
+            socialVm.updateUserContext(
+              userId: null,
+              userName: null,
+              userPhoto: null,
+              userEmail: null,
+            );
+          }
+        });
 
         // Redirect to LoginView if not logged in AND not opted for offline local mode
         if (!viewModel.isLoggedIn && !viewModel.useOfflineMode) {

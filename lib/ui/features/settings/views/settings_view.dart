@@ -3,6 +3,7 @@ import 'dart:html' as html;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../app_view_model.dart';
+import '../../social/social_view_model.dart';
 import '../../../core/theme.dart';
 
 class SettingsView extends StatefulWidget {
@@ -222,6 +223,67 @@ class _SettingsViewState extends State<SettingsView> {
                           ],
                         ),
                       ),
+                    ),
+                    const SizedBox(height: 24),
+
+                    // Privacy & Profile Visibility Card
+                    Consumer<SocialViewModel>(
+                      builder: (context, socialVm, _) {
+                        return Card(
+                          child: Padding(
+                            padding: const EdgeInsets.all(20.0),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    const Icon(Icons.security, color: AppTheme.accentGold, size: 28),
+                                    const SizedBox(width: 12),
+                                    Text(
+                                      'Integritet & Synlighet',
+                                      style: Theme.of(context).textTheme.titleLarge,
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 12),
+                                const Text(
+                                  'Välj vem som kan söka upp ditt konto och se dina dryckesrankningar:',
+                                  style: TextStyle(color: AppTheme.textSecondary, fontSize: 14),
+                                ),
+                                const SizedBox(height: 16),
+                                SegmentedButton<String>(
+                                  segments: const [
+                                    ButtonSegment<String>(
+                                      value: 'private',
+                                      label: Text('Privat'),
+                                      icon: Icon(Icons.lock, size: 16),
+                                    ),
+                                    ButtonSegment<String>(
+                                      value: 'friendsOnly',
+                                      label: Text('Vänner'),
+                                      icon: Icon(Icons.people, size: 16),
+                                    ),
+                                    ButtonSegment<String>(
+                                      value: 'public',
+                                      label: Text('Offentlig'),
+                                      icon: Icon(Icons.public, size: 16),
+                                    ),
+                                  ],
+                                  selected: {socialVm.privacyMode},
+                                  onSelectionChanged: (Set<String> newSelection) {
+                                    socialVm.updatePrivacyMode(newSelection.first);
+                                  },
+                                ),
+                                const SizedBox(height: 12),
+                                Text(
+                                  _getPrivacyDescription(socialVm.privacyMode),
+                                  style: const TextStyle(color: AppTheme.textSecondary, fontSize: 12, fontStyle: FontStyle.italic),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
                     ),
                     const SizedBox(height: 24),
 
@@ -579,6 +641,18 @@ class _SettingsViewState extends State<SettingsView> {
       messenger.showSnackBar(
         SnackBar(content: Text('Fel vid import av backup: $e')),
       );
+    }
+  }
+
+  String _getPrivacyDescription(String mode) {
+    switch (mode) {
+      case 'private':
+        return '🔒 Privat: Ingen kan söka upp din profil eller se dina dryckesrankningar.';
+      case 'public':
+        return '🌐 Offentlig: Alla användare kan söka upp din profil och se dina dryckesrankningar.';
+      case 'friendsOnly':
+      default:
+        return '👥 Endast Vänner: Kontot kan sökas upp av vänner, men dina rankningar syns först när du accepterat en vänförfrågan.';
     }
   }
 }

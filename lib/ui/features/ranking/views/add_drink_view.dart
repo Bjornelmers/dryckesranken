@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import 'package:ranking_app/data/models/drink_model.dart';
 import 'package:ranking_app/ui/core/theme.dart';
 import '../../app_view_model.dart';
+import '../../social/social_view_model.dart';
 
 class AddDrinkView extends StatefulWidget {
   final DrinkModel? drinkToEdit;
@@ -207,8 +208,10 @@ class _AddDrinkViewState extends State<AddDrinkView> with SingleTickerProviderSt
       createdAt: isEditing ? widget.drinkToEdit!.createdAt : DateTime.now(),
     );
 
-    final viewModel = Provider.of<AppViewModel>(context, listen: false);
     await viewModel.addDrink(drink);
+
+    final socialVm = Provider.of<SocialViewModel>(context, listen: false);
+    await socialVm.notifyFriendsOfRating(drink);
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(

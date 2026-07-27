@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:ranking_app/data/models/drink_model.dart';
 import '../../ranking/views/add_drink_view.dart';
 import '../../app_view_model.dart';
+import '../../social/social_view_model.dart';
 import '../../../core/theme.dart';
 
 class DrinkDetailView extends StatelessWidget {
@@ -262,21 +263,164 @@ class DrinkDetailView extends StatelessWidget {
                                     const Icon(Icons.psychology, color: AppTheme.accentCyan, size: 24),
                                     const SizedBox(width: 12),
                                     Expanded(
-                                      child: Text(
-                                        drink.scannedDescription,
-                                        style: const TextStyle(
-                                          fontSize: 14,
-                                          color: AppTheme.textSecondary,
-                                          height: 1.4,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 40),
-                          ],
+                                       child: Text(
+                                         drink.scannedDescription,
+                                         style: const TextStyle(
+                                           fontSize: 14,
+                                           color: AppTheme.textSecondary,
+                                           height: 1.4,
+                                         ),
+                                       ),
+                                     ),
+                                   ],
+                                 ),
+                               ),
+                             ),
+                             const SizedBox(height: 24),
+                           ],
+
+                           // Social Actions & Friend Ratings
+                           Consumer<SocialViewModel>(
+                             builder: (context, socialVm, _) {
+                               return Column(
+                                 crossAxisAlignment: CrossAxisAlignment.start,
+                                 children: [
+                                   Row(
+                                     children: [
+                                       Expanded(
+                                         child: OutlinedButton.icon(
+                                           style: OutlinedButton.styleFrom(
+                                             side: const BorderSide(color: AppTheme.accentGold),
+                                             padding: const EdgeInsets.symmetric(vertical: 12),
+                                           ),
+                                           onPressed: () async {
+                                             await socialVm.addToWishlist(
+                                               drinkName: drink.name,
+                                               brand: drink.brand,
+                                               type: drink.type,
+                                             );
+                                             if (context.mounted) {
+                                               ScaffoldMessenger.of(context).showSnackBar(
+                                                 SnackBar(content: Text('${drink.name} sparad på din Borde-prova-lista! 📝')),
+                                               );
+                                             }
+                                           },
+                                           icon: const Icon(Icons.bookmark_add_outlined, color: AppTheme.accentGold, size: 18),
+                                           label: const Text('Borde-prova-lista', style: TextStyle(color: AppTheme.accentGold, fontSize: 12, fontWeight: FontWeight.bold)),
+                                         ),
+                                       ),
+                                       const SizedBox(width: 12),
+                                       Expanded(
+                                         child: ElevatedButton.icon(
+                                           style: ElevatedButton.styleFrom(
+                                             backgroundColor: AppTheme.accentCyan,
+                                             foregroundColor: Colors.black,
+                                             padding: const EdgeInsets.symmetric(vertical: 12),
+                                           ),
+                                           onPressed: () => _showRecommendModal(context, socialVm, drink),
+                                           icon: const Icon(Icons.send_rounded, size: 18),
+                                           label: const Text('Rekommendera', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                                         ),
+                                       ),
+                                     ],
+                                   ),
+                                   const SizedBox(height: 28),
+
+                                   // Friends' Ratings Section
+                                   Text(
+                                     'Vänners betyg',
+                                     style: Theme.of(context).textTheme.titleLarge,
+                                   ),
+                                   const SizedBox(height: 10),
+                                   FutureBuilder<List<Map<String, dynamic>>>(
+                                     future: socialVm.getFriendsDrinkRatings(drink.name),
+                                     builder: (context, snapshot) {
+                                       if (snapshot.connectionState == ConnectionState.waiting) {
+                                         return const Center(child: CircularProgressIndicator(color: AppTheme.accentGold));
+                                       }
+                                       final ratings = snapshot.data ?? [];
+                                       if (ratings.isEmpty) {
+                                         return const Card(
+                                           child: Padding(
+                                             padding: EdgeInsets.all(16.0),
+                                             child: Row(
+                                               children: [
+                                                 Icon(Icons.info_outline, color: AppTheme.textSecondary, size: 20),
+                                                 SizedBox(width: 12),
+                                                 Expanded(
+                                                   child: Text(
+                                                     'Ingen av dina vänner har betygsatt denna dryck än.',
+                                                     style: TextStyle(color: AppTheme.textSecondary, fontSize: 13),
+                                                   ),
+                                                 ),
+                                               ],
+                                             ),
+                                           ),
+                                         );
+                                       }
+
+                                       return Column(
+                                         children: ratings.map((item) {
+                                           final fName = item['friendName'] as String? ?? 'Vän';
+                                           final fPhoto = item['friendPhoto'] as String?;
+                                           final score = item['rating'] as double? ?? 5.0;
+                                           final comment = item['comment'] as String? ?? '';
+
+                                           return Card(
+                                             margin: const EdgeInsets.only(bottom: 12),
+                                             child: Padding(
+                                               padding: const EdgeInsets.all(16.0),
+                                               child: Column(
+                                                 crossAxisAlignment: CrossAxisAlignment.start,
+                                                 children: [
+                                                   Row(
+                                                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                                     children: [
+                                                       Row(
+                                                         children: [
+                                                           CircleAvatar(
+                                                             radius: 16,
+                                                             backgroundColor: AppTheme.accentGold.withOpacity(0.2),
+                                                             backgroundImage: fPhoto != null ? NetworkImage(fPhoto) : null,
+                                                             child: fPhoto == null ? Text(fName[0].toUpperCase(), style: const TextStyle(color: AppTheme.accentGold, fontSize: 12)) : null,
+                                                           ),
+                                                           const SizedBox(width: 10),
+                                                           Text(fName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                                                         ],
+                                                       ),
+                                                       Container(
+                                                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                                         decoration: BoxDecoration(
+                                                           color: AppTheme.accentGold.withOpacity(0.2),
+                                                           borderRadius: BorderRadius.circular(8),
+                                                           border: Border.all(color: AppTheme.accentGold.withOpacity(0.5)),
+                                                         ),
+                                                         child: Text(
+                                                           '${score.toStringAsFixed(1)} / 10 ⭐',
+                                                           style: const TextStyle(color: AppTheme.accentGold, fontWeight: FontWeight.bold, fontSize: 12),
+                                                         ),
+                                                       ),
+                                                     ],
+                                                   ),
+                                                   if (comment.isNotEmpty) ...[
+                                                     const SizedBox(height: 10),
+                                                     Text(
+                                                       '"$comment"',
+                                                       style: const TextStyle(color: AppTheme.textPrimary, fontStyle: FontStyle.italic, fontSize: 13),
+                                                     ),
+                                                   ],
+                                                 ],
+                                               ),
+                                             ),
+                                           );
+                                         }).toList(),
+                                       );
+                                     },
+                                   ),
+                                 ],
+                               );
+                             },
+                           ),
                         ],
                       ),
                     ),
@@ -333,6 +477,67 @@ class DrinkDetailView extends StatelessWidget {
       MaterialPageRoute(
         builder: (context) => AddDrinkView(drinkToEdit: drink),
       ),
+    );
+  void _showRecommendModal(BuildContext context, SocialViewModel socialVm, DrinkModel drink) {
+    if (socialVm.friends.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Du behöver ha minst en vän för att rekommendera drycker.')),
+      );
+      return;
+    }
+
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        return Container(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Rekommendera "${drink.name}" till:',
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 16),
+              Expanded(
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: socialVm.friends.length,
+                  itemBuilder: (context, index) {
+                    final friend = socialVm.friends[index];
+                    final fName = friend['displayName'] as String? ?? 'Vän';
+                    final fPhoto = friend['photoURL'] as String?;
+                    final fUid = friend['uid'] as String;
+
+                    return ListTile(
+                      leading: CircleAvatar(
+                        backgroundColor: AppTheme.accentCyan.withOpacity(0.2),
+                        backgroundImage: fPhoto != null ? NetworkImage(fPhoto) : null,
+                        child: fPhoto == null ? Text(fName[0].toUpperCase(), style: const TextStyle(color: AppTheme.accentCyan, fontWeight: FontWeight.bold)) : null,
+                      ),
+                      title: Text(fName, style: const TextStyle(fontWeight: FontWeight.bold)),
+                      trailing: const Icon(Icons.send_rounded, color: AppTheme.accentCyan, size: 20),
+                      onTap: () async {
+                        Navigator.pop(ctx);
+                        await socialVm.recommendDrinkToFriend(targetFriendId: fUid, drink: drink);
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Rekommendation skickad till $fName! 🤝')),
+                          );
+                        }
+                      },
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }

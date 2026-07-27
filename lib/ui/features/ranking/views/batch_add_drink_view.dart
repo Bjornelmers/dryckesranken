@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import 'package:ranking_app/data/models/drink_model.dart';
 import 'package:ranking_app/ui/core/theme.dart';
 import '../../app_view_model.dart';
+import '../../social/social_view_model.dart';
 
 class BatchAddDrinkView extends StatefulWidget {
   final List<XFile> images;
@@ -183,6 +184,9 @@ class _BatchAddDrinkViewState extends State<BatchAddDrinkView> with SingleTicker
 
     final viewModel = Provider.of<AppViewModel>(context, listen: false);
     await viewModel.addDrink(newDrink);
+
+    final socialVm = Provider.of<SocialViewModel>(context, listen: false);
+    await socialVm.notifyFriendsOfRating(newDrink);
 
     _nextStep();
   }

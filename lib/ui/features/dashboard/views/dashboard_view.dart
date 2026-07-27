@@ -7,6 +7,10 @@ import '../../settings/views/settings_view.dart';
 import '../../details/views/drink_detail_view.dart';
 import '../../ranking/views/add_drink_view.dart';
 import '../../ranking/views/batch_add_drink_view.dart';
+import '../../social/social_view_model.dart';
+import '../../social/views/friends_view.dart';
+import '../../social/views/notifications_view.dart';
+import '../../social/views/wishlist_view.dart';
 
 class DashboardView extends StatelessWidget {
   const DashboardView({super.key});
@@ -72,9 +76,91 @@ class DashboardView extends StatelessWidget {
                               ),
                             ),
                           ],
-                          const SizedBox(width: 8),
+                          Consumer<SocialViewModel>(
+                            builder: (context, socialVm, _) {
+                              return Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  // Wishlist Icon
+                                  IconButton(
+                                    icon: const Icon(Icons.bookmark_outline, color: AppTheme.textPrimary, size: 20),
+                                    tooltip: 'Borde-prova-lista',
+                                    onPressed: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(builder: (context) => const WishlistView()),
+                                      );
+                                    },
+                                  ),
+                                  // Friends Icon
+                                  Stack(
+                                    children: [
+                                      IconButton(
+                                        icon: const Icon(Icons.people_outline, color: AppTheme.textPrimary, size: 20),
+                                        tooltip: 'Vänner',
+                                        onPressed: () {
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(builder: (context) => const FriendsView()),
+                                          );
+                                        },
+                                      ),
+                                      if (socialVm.pendingRequestsCount > 0)
+                                        Positioned(
+                                          right: 4,
+                                          top: 4,
+                                          child: Container(
+                                            padding: const EdgeInsets.all(4),
+                                            decoration: const BoxDecoration(
+                                              color: AppTheme.accentGold,
+                                              shape: BoxShape.circle,
+                                            ),
+                                            child: Text(
+                                              '${socialVm.pendingRequestsCount}',
+                                              style: const TextStyle(color: Colors.black, fontSize: 9, fontWeight: FontWeight.bold),
+                                            ),
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                                  // Notification Bell Icon
+                                  Stack(
+                                    children: [
+                                      IconButton(
+                                        icon: const Icon(Icons.notifications_none, color: AppTheme.textPrimary, size: 20),
+                                        tooltip: 'Notiser',
+                                        onPressed: () {
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(builder: (context) => const NotificationsView()),
+                                          );
+                                        },
+                                      ),
+                                      if (socialVm.unreadNotificationsCount > 0)
+                                        Positioned(
+                                          right: 4,
+                                          top: 4,
+                                          child: Container(
+                                            padding: const EdgeInsets.all(4),
+                                            decoration: const BoxDecoration(
+                                              color: AppTheme.accentPink,
+                                              shape: BoxShape.circle,
+                                            ),
+                                            child: Text(
+                                              '${socialVm.unreadNotificationsCount}',
+                                              style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold),
+                                            ),
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                                ],
+                              );
+                            },
+                          ),
+                          const SizedBox(width: 4),
                           IconButton(
-                            icon: const Icon(Icons.settings_outlined, color: AppTheme.textPrimary),
+                            icon: const Icon(Icons.settings_outlined, color: AppTheme.textPrimary, size: 20),
                             onPressed: () {
                               Navigator.push(
                                 context,
@@ -86,7 +172,7 @@ class DashboardView extends StatelessWidget {
                       ),
                     ],
                   ),
-                  titlePadding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0),
+                  titlePadding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
                 ),
               ),
 
