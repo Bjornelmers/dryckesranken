@@ -52,54 +52,6 @@ class DashboardView extends StatelessWidget {
                         Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            if (viewModel.isLoggedIn)
-                              Tooltip(
-                                message: 'Inställningar',
-                                child: InkWell(
-                                  onTap: () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(builder: (context) => const SettingsView()),
-                                    );
-                                  },
-                                  borderRadius: BorderRadius.circular(12),
-                                  child: CircleAvatar(
-                                    radius: 12,
-                                    backgroundImage: NetworkImage(
-                                      viewModel.currentUser!.photoURL ??
-                                          'https://www.gravatar.com/avatar/?d=mp',
-                                    ),
-                                  ),
-                                ),
-                              )
-                            else ...[
-                              TextButton.icon(
-                                onPressed: () => _handleLogin(context, viewModel),
-                                icon: const Icon(Icons.login, size: 12, color: AppTheme.accentGold),
-                                label: const Text(
-                                  'Logga in',
-                                  style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppTheme.accentGold),
-                                ),
-                                style: TextButton.styleFrom(
-                                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                                  minimumSize: Size.zero,
-                                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                ),
-                              ),
-                              const SizedBox(width: 4),
-                              IconButton(
-                                padding: const EdgeInsets.all(4),
-                                constraints: const BoxConstraints(),
-                                icon: const Icon(Icons.settings_outlined, color: AppTheme.textPrimary, size: 18),
-                                tooltip: 'Inställningar',
-                                onPressed: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(builder: (context) => const SettingsView()),
-                                  );
-                                },
-                              ),
-                            ],
                             Consumer<SocialViewModel>(
                               builder: (context, socialVm, _) {
                                 return Row(
@@ -190,7 +142,55 @@ class DashboardView extends StatelessWidget {
                                 );
                               },
                             ),
-
+                            const SizedBox(width: 4),
+                            if (viewModel.isLoggedIn)
+                              Tooltip(
+                                message: 'Inställningar',
+                                child: InkWell(
+                                  onTap: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(builder: (context) => const SettingsView()),
+                                    );
+                                  },
+                                  borderRadius: BorderRadius.circular(12),
+                                  child: CircleAvatar(
+                                    radius: 12,
+                                    backgroundImage: NetworkImage(
+                                      viewModel.currentUser!.photoURL ??
+                                          'https://www.gravatar.com/avatar/?d=mp',
+                                    ),
+                                  ),
+                                ),
+                              )
+                            else ...[
+                              TextButton.icon(
+                                onPressed: () => _handleLogin(context, viewModel),
+                                icon: const Icon(Icons.login, size: 12, color: AppTheme.accentGold),
+                                label: const Text(
+                                  'Logga in',
+                                  style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppTheme.accentGold),
+                                ),
+                                style: TextButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                                  minimumSize: Size.zero,
+                                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              IconButton(
+                                padding: const EdgeInsets.all(4),
+                                constraints: const BoxConstraints(),
+                                icon: const Icon(Icons.settings_outlined, color: AppTheme.textPrimary, size: 18),
+                                tooltip: 'Inställningar',
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(builder: (context) => const SettingsView()),
+                                  );
+                                },
+                              ),
+                            ],
                           ],
                         ),
                       ],
