@@ -15,6 +15,7 @@ class AppViewModel extends ChangeNotifier {
   String? _apiKey;
   String _searchQuery = '';
   String _selectedTypeFilter = 'Alla';
+  String _selectedCountryFilter = 'Alla länder';
   DateTimeRange? _selectedDateRangeFilter;
   User? _currentUser;
   bool _useOfflineMode = false;
@@ -31,6 +32,7 @@ class AppViewModel extends ChangeNotifier {
   bool get hasApiKey => _apiKey != null && _apiKey!.isNotEmpty;
   String get searchQuery => _searchQuery;
   String get selectedTypeFilter => _selectedTypeFilter;
+  String get selectedCountryFilter => _selectedCountryFilter;
   DateTimeRange? get selectedDateRangeFilter => _selectedDateRangeFilter;
   User? get currentUser => _currentUser;
   bool get isLoggedIn => _currentUser != null;
@@ -139,7 +141,11 @@ class AppViewModel extends ChangeNotifier {
                       drink.createdAt.isBefore(end.add(const Duration(seconds: 1)));
       }
 
-      return matchesSearch && matchesType && matchesDate;
+      // 4. Apply Country Filter
+      final matchesCountry = _selectedCountryFilter == 'Alla länder' ||
+          (drink.country != null && drink.country!.trim().toLowerCase() == _selectedCountryFilter.trim().toLowerCase());
+
+      return matchesSearch && matchesType && matchesDate && matchesCountry;
     }).toList();
   }
 
@@ -223,6 +229,18 @@ class AppViewModel extends ChangeNotifier {
     return ['Alla', ...sortedCategories];
   }
 
+  List<String> get availableCountries {
+    final countries = <String>{};
+    for (var drink in _drinks) {
+      if (drink.country != null && drink.country!.isNotEmpty) {
+        countries.add(drink.country!.trim());
+      }
+    }
+    final sortedCountries = countries.toList();
+    sortedCountries.sort();
+    return ['Alla länder', ...sortedCountries];
+  }
+
   // Actions
   void setSearchQuery(String query) {
     _searchQuery = query;
@@ -236,6 +254,11 @@ class AppViewModel extends ChangeNotifier {
 
   void setSelectedDateRangeFilter(DateTimeRange? range) {
     _selectedDateRangeFilter = range;
+    notifyListeners();
+  }
+
+  void setSelectedCountryFilter(String filter) {
+    _selectedCountryFilter = filter;
     notifyListeners();
   }
 

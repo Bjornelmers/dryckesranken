@@ -34,6 +34,7 @@ class _AddDrinkViewState extends State<AddDrinkView> with SingleTickerProviderSt
   }
   bool _isScanning = false;
   bool _hasScanned = false;
+  bool _isSaving = false;
   String _errorMessage = '';
 
   // Scan result controllers
@@ -220,48 +221,67 @@ class _AddDrinkViewState extends State<AddDrinkView> with SingleTickerProviderSt
 
   // Save the drink entry
   Future<void> _saveDrink() async {
+    if (_isSaving) return;
     if (!_formKey.currentState!.validate()) return;
     if (_imageBytes == null) return;
 
-    final abv = double.tryParse(_abvController.text) ?? 0.0;
-    
-    final isEditing = widget.drinkToEdit != null;
-    final drink = DrinkModel(
-      id: isEditing ? widget.drinkToEdit!.id : DateTime.now().microsecondsSinceEpoch.toString(),
-      name: _nameController.text.trim(),
-      brand: _brandController.text.trim(),
-      type: _typeController.text.trim(),
-      abv: abv,
-      rating: _rating,
-      comment: _commentController.text.trim(),
-      imageBytes: _imageBytes,
-      scannedDescription: _descriptionController.text.trim(),
-      createdAt: _selectedDate,
-      location: _locationController.text.trim(),
-      companion: _companionController.text.trim(),
-      companionUid: _companionUid,
-      country: _countryController.text.trim(),
-    );
+    setState(() {
+      _isSaving = true;
+    });
 
-    final viewModel = Provider.of<AppViewModel>(context, listen: false);
-    await viewModel.addDrink(drink);
-
-    final socialVm = Provider.of<SocialViewModel>(context, listen: false);
-    await socialVm.notifyFriendsOfRating(drink);
-    if (_companionUid != null && _companionUid!.isNotEmpty) {
-      await socialVm.notifyCompanionOfDrink(targetCompanionUid: _companionUid!, drink: drink);
-    }
-
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(isEditing
-              ? '${drink.name} har uppdaterats!'
-              : '${drink.name} sparades framgångsrikt!'),
-          backgroundColor: AppTheme.ratingGreen,
-        ),
+    try {
+      final abv = double.tryParse(_abvController.text) ?? 0.0;
+      
+      final isEditing = widget.drinkToEdit != null;
+      final drink = DrinkModel(
+        id: isEditing ? widget.drinkToEdit!.id : DateTime.now().microsecondsSinceEpoch.toString(),
+        name: _nameController.text.trim(),
+        brand: _brandController.text.trim(),
+        type: _typeController.text.trim(),
+        abv: abv,
+        rating: _rating,
+        comment: _commentController.text.trim(),
+        imageBytes: _imageBytes,
+        scannedDescription: _descriptionController.text.trim(),
+        createdAt: _selectedDate,
+        location: _locationController.text.trim(),
+        companion: _companionController.text.trim(),
+        companionUid: _companionUid,
+        country: _countryController.text.trim(),
       );
-      Navigator.pop(context);
+
+      final viewModel = Provider.of<AppViewModel>(context, listen: false);
+      await viewModel.addDrink(drink);
+
+      final socialVm = Provider.of<SocialViewModel>(context, listen: false);
+      await socialVm.notifyFriendsOfRating(drink);
+      if (_companionUid != null && _companionUid!.isNotEmpty) {
+        await socialVm.notifyCompanionOfDrink(targetCompanionUid: _companionUid!, drink: drink);
+      }
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(isEditing
+                ? '${drink.name} har uppdaterats!'
+                : '${drink.name} sparades framgångsrikt!'),
+            backgroundColor: AppTheme.ratingGreen,
+          ),
+        );
+        Navigator.pop(context);
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _errorMessage = 'Det gick inte att spara: $e';
+        });
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSaving = false;
+        });
+      }
     }
   }
 
@@ -339,7 +359,7 @@ class _AddDrinkViewState extends State<AddDrinkView> with SingleTickerProviderSt
                 _buildPhotoSelectorBox(),
                 const SizedBox(height: 24),
 
-                if (_imageBytes != null && !_hasScanned && !_isScanning)
+                if (_imageBytes != null && !_hasScanned && !_isScanning) ...[
                   ElevatedButton.icon(
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppTheme.accentCyan,
@@ -353,6 +373,21 @@ class _AddDrinkViewState extends State<AddDrinkView> with SingleTickerProviderSt
                           : 'Kör test-analys (Demo)',
                     ),
                   ),
+                  const SizedBox(height: 12),
+                  OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppTheme.textSecondary,
+                      side: const BorderSide(color: AppTheme.borderLight),
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _hasScanned = true;
+                      });
+                    },
+                    icon: const Icon(Icons.edit, size: 18),
+                    label: const Text('Fyll i informationen manuellt direkt'),
+                  ),
+                ],
 
                 if (_isScanning)
                   Padding(
@@ -448,7 +483,7 @@ class _AddDrinkViewState extends State<AddDrinkView> with SingleTickerProviderSt
                                        flex: 1,
                                        child: TextFormField(
                                          controller: _abvController,
-                                         decoration: const InputDecoration(labelText: 'ABV (%)', hintText: '5.0'),
+                                         decoration: const InputDecoration(labelText: 'Alkoholhalt (%) / ABV', hintText: '5.0'),
                                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
                                          validator: (v) {
                                            if (v != null && v.isNotEmpty && double.tryParse(v) == null) {
@@ -697,8 +732,17 @@ class _AddDrinkViewState extends State<AddDrinkView> with SingleTickerProviderSt
                         const SizedBox(height: 30),
 
                         ElevatedButton(
-                          onPressed: _saveDrink,
-                          child: const Text('Spara recension'),
+                          onPressed: _isSaving ? null : _saveDrink,
+                          child: _isSaving
+                              ? const SizedBox(
+                                  height: 20,
+                                  width: 20,
+                                  child: CircularProgressIndicator(
+                                    color: Colors.black,
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : const Text('Spara recension'),
                         ),
                         const SizedBox(height: 40),
                       ],

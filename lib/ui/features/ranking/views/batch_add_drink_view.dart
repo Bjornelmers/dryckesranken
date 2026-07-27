@@ -22,6 +22,7 @@ class _BatchAddDrinkViewState extends State<BatchAddDrinkView> with SingleTicker
   Uint8List? _currentImageBytes;
   bool _isScanning = false;
   bool _hasScanned = false;
+  bool _isSaving = false;
   String _errorMessage = '';
 
   // Scan result controllers
@@ -160,32 +161,47 @@ class _BatchAddDrinkViewState extends State<BatchAddDrinkView> with SingleTicker
 
   // Save current drink and progress the wizard
   Future<void> _saveAndNext() async {
+    if (_isSaving) return;
     if (!_formKey.currentState!.validate()) return;
     if (_currentImageBytes == null) return;
 
-    final abv = double.tryParse(_abvController.text) ?? 0.0;
+    setState(() {
+      _isSaving = true;
+    });
 
-    final newDrink = DrinkModel(
-      id: DateTime.now().microsecondsSinceEpoch.toString(),
-      name: _nameController.text.trim(),
-      brand: _brandController.text.trim(),
-      type: _typeController.text.trim(),
-      abv: abv,
-      rating: _rating,
-      comment: _commentController.text.trim(),
-      imageBytes: _currentImageBytes,
-      scannedDescription: _descriptionController.text.trim(),
-      createdAt: DateTime.now(),
-      country: _countryController.text.trim(),
-    );
+    try {
+      final abv = double.tryParse(_abvController.text) ?? 0.0;
 
-    final viewModel = Provider.of<AppViewModel>(context, listen: false);
-    await viewModel.addDrink(newDrink);
+      final newDrink = DrinkModel(
+        id: DateTime.now().microsecondsSinceEpoch.toString(),
+        name: _nameController.text.trim(),
+        brand: _brandController.text.trim(),
+        type: _typeController.text.trim(),
+        abv: abv,
+        rating: _rating,
+        comment: _commentController.text.trim(),
+        imageBytes: _currentImageBytes,
+        scannedDescription: _descriptionController.text.trim(),
+        createdAt: DateTime.now(),
+        country: _countryController.text.trim(),
+      );
 
-    final socialVm = Provider.of<SocialViewModel>(context, listen: false);
-    await socialVm.notifyFriendsOfRating(newDrink);
+      final viewModel = Provider.of<AppViewModel>(context, listen: false);
+      await viewModel.addDrink(newDrink);
 
-    _nextStep();
+      final socialVm = Provider.of<SocialViewModel>(context, listen: false);
+      await socialVm.notifyFriendsOfRating(newDrink);
+
+      _nextStep();
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Det gick inte att spara drycken: $e';
+      });
+    } finally {
+      setState(() {
+        _isSaving = false;
+      });
+    }
   }
 
   // Move to next step or complete
@@ -375,7 +391,7 @@ class _BatchAddDrinkViewState extends State<BatchAddDrinkView> with SingleTicker
                                             flex: 1,
                                             child: TextFormField(
                                               controller: _abvController,
-                                              decoration: const InputDecoration(labelText: 'ABV (%)', hintText: '5.0'),
+                                              decoration: const InputDecoration(labelText: 'Alkoholhalt (%) / ABV', hintText: '5.0'),
                                               keyboardType: const TextInputType.numberWithOptions(decimal: true),
                                               validator: (v) {
                                                 if (v != null && v.isNotEmpty && double.tryParse(v) == null) {
@@ -525,12 +541,21 @@ class _BatchAddDrinkViewState extends State<BatchAddDrinkView> with SingleTicker
                               const SizedBox(height: 30),
 
                               ElevatedButton(
-                                onPressed: _saveAndNext,
-                                child: Text(
-                                  _currentIndex < widget.images.length - 1
-                                      ? 'Spara & Nästa dryck (${_currentIndex + 2} av ${widget.images.length})'
-                                      : 'Spara & Slutför',
-                                ),
+                                onPressed: _isSaving ? null : _saveAndNext,
+                                child: _isSaving
+                                    ? const SizedBox(
+                                        height: 20,
+                                        width: 20,
+                                        child: CircularProgressIndicator(
+                                          color: Colors.black,
+                                          strokeWidth: 2,
+                                        ),
+                                      )
+                                    : Text(
+                                        _currentIndex < widget.images.length - 1
+                                            ? 'Spara & Nästa dryck (${_currentIndex + 2} av ${widget.images.length})'
+                                            : 'Spara & Slutför',
+                                      ),
                               ),
                               const SizedBox(height: 40),
                             ],

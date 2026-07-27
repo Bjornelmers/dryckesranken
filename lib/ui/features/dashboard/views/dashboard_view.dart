@@ -211,6 +211,19 @@ class DashboardView extends StatelessWidget {
                       const SizedBox(height: 16),
                       // Filter chips row
                       _buildFilterChips(context, viewModel),
+                      Builder(
+                        builder: (context) {
+                          final countries = viewModel.availableCountries;
+                          if (countries.length <= 1) return const SizedBox.shrink();
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              const SizedBox(height: 12),
+                              _buildCountryFilterChips(context, viewModel),
+                            ],
+                          );
+                        },
+                      ),
                     ],
                   ),
                 ),
@@ -498,6 +511,7 @@ class DashboardView extends StatelessWidget {
   Widget _buildEmptyState(BuildContext context, AppViewModel viewModel) {
     final hasFilter = viewModel.searchQuery.isNotEmpty ||
         viewModel.selectedTypeFilter != 'Alla' ||
+        viewModel.selectedCountryFilter != 'Alla länder' ||
         viewModel.selectedDateRangeFilter != null;
 
     return Center(
@@ -531,6 +545,7 @@ class DashboardView extends StatelessWidget {
                 onPressed: () {
                   viewModel.setSearchQuery('');
                   viewModel.setSelectedTypeFilter('Alla');
+                  viewModel.setSelectedCountryFilter('Alla länder');
                   viewModel.setSelectedDateRangeFilter(null);
                 },
                 child: const Text('Rensa alla filter'),
@@ -756,6 +771,51 @@ class DashboardView extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+
+  Widget _buildCountryFilterChips(BuildContext context, AppViewModel viewModel) {
+    final countries = viewModel.availableCountries;
+    if (countries.length <= 1) return const SizedBox.shrink();
+
+    return SizedBox(
+      height: 40,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        itemCount: countries.length,
+        itemBuilder: (context, index) {
+          final country = countries[index];
+          final isSelected = viewModel.selectedCountryFilter == country;
+          return Padding(
+            padding: const EdgeInsets.only(right: 8.0),
+            child: ChoiceChip(
+              avatar: country == 'Alla länder'
+                  ? null
+                  : const Icon(Icons.location_on_outlined, color: AppTheme.accentGold, size: 12),
+              label: Text(country),
+              selected: isSelected,
+              onSelected: (selected) {
+                if (selected) {
+                  viewModel.setSelectedCountryFilter(country);
+                }
+              },
+              selectedColor: AppTheme.accentGold.withOpacity(0.2),
+              checkmarkColor: AppTheme.accentGold,
+              backgroundColor: AppTheme.surfaceCardColor,
+              labelStyle: TextStyle(
+                color: isSelected ? AppTheme.accentGold : AppTheme.textSecondary,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+                side: BorderSide(
+                  color: isSelected ? AppTheme.accentGold : AppTheme.borderLight,
+                ),
+              ),
+            ),
+          );
+        },
+      ),
     );
   }
 
