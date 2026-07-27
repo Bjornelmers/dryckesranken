@@ -116,6 +116,17 @@ class _UserProfileViewState extends State<UserProfileView> {
                             _buildPrivacyBadge(),
                             const SizedBox(height: 16),
                             if (!_isFriend) ...[
+                              if (_privacyMode == 'friendsOnly') ...[
+                                const Padding(
+                                  padding: EdgeInsets.symmetric(horizontal: 12.0, vertical: 4.0),
+                                  child: Text(
+                                    'Skicka en vänförfrågan för att få tillgång till användarens dryckesrankningar.',
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(color: AppTheme.textSecondary, fontSize: 13, height: 1.3),
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
+                              ],
                               _buildFriendActionButton(context, socialVm, status),
                               const SizedBox(height: 16),
                             ],
@@ -138,7 +149,7 @@ class _UserProfileViewState extends State<UserProfileView> {
                   ),
                 ),
 
-                // Drink Grid or Privacy Lock Message
+                // Privacy mode body checks
                 if (_privacyMode == 'private')
                   const SliverFillRemaining(
                     hasScrollBody: false,
@@ -146,7 +157,7 @@ class _UserProfileViewState extends State<UserProfileView> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.lock, size: 64, color: AppTheme.textSecondary),
+                          Icon(Icons.lock_outline, size: 64, color: AppTheme.textSecondary),
                           SizedBox(height: 16),
                           Text('Det här kontot är privat.', style: TextStyle(color: AppTheme.textSecondary, fontSize: 16)),
                         ],
@@ -154,28 +165,26 @@ class _UserProfileViewState extends State<UserProfileView> {
                     ),
                   )
                 else if (_privacyMode == 'friendsOnly' && !_isFriend)
-                  SliverFillRemaining(
+                  const SliverFillRemaining(
                     hasScrollBody: false,
                     child: Center(
                       child: Padding(
-                        padding: const EdgeInsets.all(24.0),
+                        padding: EdgeInsets.all(24.0),
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            const Icon(Icons.people_outline, size: 64, color: AppTheme.textSecondary),
-                            const SizedBox(height: 16),
-                            const Text(
+                            Icon(Icons.lock_outline, size: 64, color: AppTheme.textSecondary),
+                            SizedBox(height: 16),
+                            Text(
                               'Endast synlig för vänner',
                               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
                             ),
-                            const SizedBox(height: 8),
-                            const Text(
-                              'Skicka en vänförfrågan för att få tillgång till användarens dryckesrankningar.',
+                            SizedBox(height: 8),
+                            Text(
+                              'Innehållet är låst tills din vänförfrågan har blivit godkänd.',
                               textAlign: TextAlign.center,
                               style: TextStyle(color: AppTheme.textSecondary, fontSize: 14),
                             ),
-                            const SizedBox(height: 20),
-                            _buildFriendActionButton(context, socialVm, status),
                           ],
                         ),
                       ),
