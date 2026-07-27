@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../social_view_model.dart';
 import '../../../core/theme.dart';
+import 'user_profile_view.dart';
 
 class NotificationsView extends StatelessWidget {
   const NotificationsView({super.key});
@@ -42,6 +43,8 @@ class NotificationsView extends StatelessWidget {
                 final drinkBrand = notif['drinkBrand'] as String?;
                 final drinkType = notif['drinkType'] as String?;
 
+                final fromUserId = notif['fromUserId'] as String?;
+
                 return Card(
                   margin: const EdgeInsets.only(bottom: 12),
                   color: isRead ? AppTheme.surfaceCardColor : AppTheme.surfaceCardColor.withOpacity(0.9),
@@ -52,8 +55,24 @@ class NotificationsView extends StatelessWidget {
                       width: isRead ? 1 : 1.5,
                     ),
                   ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(12),
+                    onTap: () {
+                      if (fromUserId != null && fromUserId.isNotEmpty) {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => UserProfileView(
+                              userId: fromUserId,
+                              userName: fromName,
+                              userPhoto: photo,
+                            ),
+                          ),
+                        );
+                      }
+                    },
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -116,10 +135,65 @@ class NotificationsView extends StatelessWidget {
                             label: const Text('+ Lägg till på min Borde-prova-lista', style: TextStyle(fontWeight: FontWeight.bold)),
                           ),
                         ],
+                        // Friend Request Action Buttons (Direct Accept / Decline)
+                        if (type == 'friend_request') ...[
+                          const SizedBox(height: 12),
+                          const Divider(color: AppTheme.borderLight),
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: ElevatedButton.icon(
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: AppTheme.accentGold,
+                                    foregroundColor: Colors.black,
+                                  ),
+                                  onPressed: () async {
+                                    final fromUserId = notif['fromUserId'] as String? ?? '';
+                                    final match = socialVm.incomingRequests.firstWhere(
+                                      (r) => r['fromUserId'] == fromUserId,
+                                      orElse: () => {'id': '${fromUserId}_current'},
+                                    );
+                                    await socialVm.respondToFriendRequest(match['id'] as String, fromUserId, true);
+                                    await socialVm.markNotificationAsRead(notifId);
+                                    if (context.mounted) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(content: Text('Du och $fromName är nu vänner!')),
+                                      );
+                                    }
+                                  },
+                                  icon: const Icon(Icons.check_circle, size: 18),
+                                  label: const Text('Godkänn', style: TextStyle(fontWeight: FontWeight.bold)),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: OutlinedButton.icon(
+                                  style: OutlinedButton.styleFrom(
+                                    side: const BorderSide(color: AppTheme.accentPink),
+                                    foregroundColor: AppTheme.accentPink,
+                                  ),
+                                  onPressed: () async {
+                                    final fromUserId = notif['fromUserId'] as String? ?? '';
+                                    final match = socialVm.incomingRequests.firstWhere(
+                                      (r) => r['fromUserId'] == fromUserId,
+                                      orElse: () => {'id': '${fromUserId}_current'},
+                                    );
+                                    await socialVm.respondToFriendRequest(match['id'] as String, fromUserId, false);
+                                    await socialVm.markNotificationAsRead(notifId);
+                                  },
+                                  icon: const Icon(Icons.cancel, size: 18),
+                                  label: const Text('Neka'),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
                       ],
                     ),
                   ),
-                );
+                ),
+              );
               },
             ),
     );

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../social_view_model.dart';
 import '../../../core/theme.dart';
+import 'user_profile_view.dart';
 
 class FriendsView extends StatefulWidget {
   const FriendsView({super.key});
@@ -137,20 +138,49 @@ class _FriendsViewState extends State<FriendsView> with SingleTickerProviderStat
         final photo = friend['photoURL'] as String?;
         final name = friend['displayName'] as String? ?? 'Vän';
 
+        final friendUid = friend['uid'] as String;
+
         return Card(
           margin: const EdgeInsets.only(bottom: 12),
-          child: ListTile(
-            leading: CircleAvatar(
-              backgroundColor: AppTheme.accentGold.withOpacity(0.2),
-              backgroundImage: photo != null ? NetworkImage(photo) : null,
-              child: photo == null ? Text(name[0].toUpperCase(), style: const TextStyle(color: AppTheme.accentGold, fontWeight: FontWeight.bold)) : null,
-            ),
-            title: Text(name, style: const TextStyle(fontWeight: FontWeight.bold)),
-            subtitle: const Text('Vän sedan tidigare', style: TextStyle(color: AppTheme.textSecondary, fontSize: 12)),
-            trailing: IconButton(
-              icon: const Icon(Icons.person_remove_outlined, color: AppTheme.textSecondary),
-              tooltip: 'Ta bort vän',
-              onPressed: () => _confirmRemoveFriend(context, socialVm, friend['uid'], name),
+          child: InkWell(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => UserProfileView(
+                    userId: friendUid,
+                    userName: name,
+                    userPhoto: photo,
+                  ),
+                ),
+              );
+            },
+            child: Padding(
+              padding: const EdgeInsets.all(12.0),
+              child: Row(
+                children: [
+                  CircleAvatar(
+                    backgroundColor: AppTheme.accentGold.withOpacity(0.2),
+                    backgroundImage: photo != null ? NetworkImage(photo) : null,
+                    child: photo == null ? Text(name[0].toUpperCase(), style: const TextStyle(color: AppTheme.accentGold, fontWeight: FontWeight.bold)) : null,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(name, style: const TextStyle(fontWeight: FontWeight.bold), maxLines: 1, overflow: TextOverflow.ellipsis),
+                        const Text('Vän sedan tidigare', style: TextStyle(color: AppTheme.textSecondary, fontSize: 12)),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.person_remove_outlined, color: AppTheme.textSecondary),
+                    tooltip: 'Ta bort vän',
+                    onPressed: () => _confirmRemoveFriend(context, socialVm, friendUid, name),
+                  ),
+                ],
+              ),
             ),
           ),
         );
@@ -212,18 +242,49 @@ class _FriendsViewState extends State<FriendsView> with SingleTickerProviderStat
 
                         return Card(
                           margin: const EdgeInsets.only(bottom: 12),
-                          child: ListTile(
-                            leading: CircleAvatar(
-                              backgroundColor: AppTheme.accentCyan.withOpacity(0.2),
-                              backgroundImage: photo != null ? NetworkImage(photo) : null,
-                              child: photo == null ? Text(name[0].toUpperCase(), style: const TextStyle(color: AppTheme.accentCyan, fontWeight: FontWeight.bold)) : null,
+                          child: InkWell(
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => UserProfileView(
+                                    userId: targetUid,
+                                    userName: name,
+                                    userPhoto: photo,
+                                  ),
+                                ),
+                              );
+                            },
+                            child: Padding(
+                              padding: const EdgeInsets.all(12.0),
+                              child: Row(
+                                children: [
+                                  CircleAvatar(
+                                    backgroundColor: AppTheme.accentCyan.withOpacity(0.2),
+                                    backgroundImage: photo != null ? NetworkImage(photo) : null,
+                                    child: photo == null ? Text(name[0].toUpperCase(), style: const TextStyle(color: AppTheme.accentCyan, fontWeight: FontWeight.bold)) : null,
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(name, style: const TextStyle(fontWeight: FontWeight.bold), maxLines: 1, overflow: TextOverflow.ellipsis),
+                                        if ((user['email'] as String? ?? '').isNotEmpty)
+                                          Text(
+                                            user['email'],
+                                            style: const TextStyle(color: AppTheme.textSecondary, fontSize: 12),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  _buildActionButtonForUser(context, socialVm, targetUid, status),
+                                ],
+                              ),
                             ),
-                            title: Text(name, style: const TextStyle(fontWeight: FontWeight.bold)),
-                            subtitle: Text(
-                              user['email'] ?? '',
-                              style: const TextStyle(color: AppTheme.textSecondary, fontSize: 12),
-                            ),
-                            trailing: _buildActionButtonForUser(context, socialVm, targetUid, status),
                           ),
                         );
                       },

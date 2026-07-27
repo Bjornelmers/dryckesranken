@@ -74,6 +74,10 @@ class SocialViewModel extends ChangeNotifier {
     }
   }
 
+  Future<String> getUserPrivacyMode(String userId) async {
+    return await _socialService.getUserPrivacyMode(userId);
+  }
+
   Future<void> _loadPrivacyMode() async {
     if (_currentUserId == null) return;
     _privacyMode = await _socialService.getUserPrivacyMode(_currentUserId!);
