@@ -10,8 +10,13 @@ import '../../social/social_view_model.dart';
 
 class AddDrinkView extends StatefulWidget {
   final DrinkModel? drinkToEdit;
+  final DrinkModel? prefillDrink;
 
-  const AddDrinkView({super.key, this.drinkToEdit});
+  const AddDrinkView({
+    super.key,
+    this.drinkToEdit,
+    this.prefillDrink,
+  });
 
   @override
   State<AddDrinkView> createState() => _AddDrinkViewState();
@@ -60,7 +65,7 @@ class _AddDrinkViewState extends State<AddDrinkView> with SingleTickerProviderSt
         }
       });
 
-    // Pre-populate if editing
+    // Pre-populate if editing or prefilling from friend's review
     if (widget.drinkToEdit != null) {
       final drink = widget.drinkToEdit!;
       _imageBytes = drink.imageBytes;
@@ -70,8 +75,19 @@ class _AddDrinkViewState extends State<AddDrinkView> with SingleTickerProviderSt
       _abvController.text = drink.abv.toString();
       _descriptionController.text = drink.scannedDescription;
       _commentController.text = drink.comment;
-      _typeController.text = drink.type; // <-- CHANGED
+      _typeController.text = drink.type;
       _rating = drink.rating;
+    } else if (widget.prefillDrink != null) {
+      final drink = widget.prefillDrink!;
+      _imageBytes = drink.imageBytes;
+      _hasScanned = true;
+      _nameController.text = drink.name;
+      _brandController.text = drink.brand;
+      _abvController.text = drink.abv.toString();
+      _descriptionController.text = drink.scannedDescription;
+      _typeController.text = drink.type;
+      _commentController.text = '';
+      _rating = 5.0;
     } else {
       _typeController.text = 'Lager';
     }

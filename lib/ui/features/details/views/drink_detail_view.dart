@@ -187,6 +187,28 @@ class DrinkDetailView extends StatelessWidget {
                                         color: AppTheme.accentGold,
                                       ),
                                     ),
+                                    const SizedBox(height: 24),
+                                    ElevatedButton.icon(
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: AppTheme.accentGold,
+                                        foregroundColor: Colors.black,
+                                        minimumSize: const Size.fromHeight(50),
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                      ),
+                                      onPressed: () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) => AddDrinkView(prefillDrink: drink),
+                                          ),
+                                        );
+                                      },
+                                      icon: const Icon(Icons.rate_review, size: 20),
+                                      label: const Text(
+                                        'Gör egen recension',
+                                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                      ),
+                                    ),
                                   ],
                                 ),
                               ),
