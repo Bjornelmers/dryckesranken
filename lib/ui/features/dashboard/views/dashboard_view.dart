@@ -281,16 +281,7 @@ class DashboardView extends StatelessWidget {
         },
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const AddDrinkView(
-                initialSource: ImageSource.gallery,
-              ),
-            ),
-          );
-        },
+        onPressed: () => _showAddDrinkSheet(context),
         icon: const Icon(Icons.add),
         label: const Text(
           'Lägg till',
@@ -815,6 +806,146 @@ class DashboardView extends StatelessWidget {
       }
     }
   }
+
+  void _showAddDrinkSheet(BuildContext context) {
+    final bool isMobile = MediaQuery.of(context).size.width < 600;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppTheme.surfaceCardColor,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Handle bar
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    margin: const EdgeInsets.only(bottom: 20),
+                    decoration: BoxDecoration(
+                      color: AppTheme.borderLight,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                const Text(
+                  'Lägg till ny dryck',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: AppTheme.textPrimary,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 6),
+                const Text(
+                  'Välj hur du vill lägga till en bild på drycken',
+                  style: TextStyle(fontSize: 13, color: AppTheme.textSecondary),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 24),
+
+                // Bildbibliotek (always shown)
+                _SheetOption(
+                  icon: Icons.photo_library_outlined,
+                  label: 'Bildbibliotek',
+                  onTap: () async {
+                    Navigator.pop(ctx);
+                    final picker = ImagePicker();
+                    final XFile? file = await picker.pickImage(
+                      source: ImageSource.gallery,
+                      maxWidth: 1024,
+                      maxHeight: 1024,
+                      imageQuality: 85,
+                    );
+                    if (file != null && context.mounted) {
+                      final bytes = await file.readAsBytes();
+                      if (context.mounted) {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => AddDrinkView(initialImageBytes: bytes),
+                          ),
+                        );
+                      }
+                    }
+                  },
+                ),
+
+                // Ta bild (only on mobile)
+                if (isMobile) ...[
+                  const SizedBox(height: 12),
+                  _SheetOption(
+                    icon: Icons.camera_alt_outlined,
+                    label: 'Ta bild',
+                    onTap: () async {
+                      Navigator.pop(ctx);
+                      final picker = ImagePicker();
+                      final XFile? file = await picker.pickImage(
+                        source: ImageSource.camera,
+                        maxWidth: 1024,
+                        maxHeight: 1024,
+                        imageQuality: 85,
+                      );
+                      if (file != null && context.mounted) {
+                        final bytes = await file.readAsBytes();
+                        if (context.mounted) {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => AddDrinkView(initialImageBytes: bytes),
+                            ),
+                          );
+                        }
+                      }
+                    },
+                  ),
+                ],
+
+                // Välj fil
+                const SizedBox(height: 12),
+                _SheetOption(
+                  icon: Icons.folder_open_outlined,
+                  label: 'Välj fil',
+                  onTap: () async {
+                    Navigator.pop(ctx);
+                    final picker = ImagePicker();
+                    final XFile? file = await picker.pickImage(
+                      source: ImageSource.gallery,
+                      maxWidth: 1024,
+                      maxHeight: 1024,
+                      imageQuality: 85,
+                    );
+                    if (file != null && context.mounted) {
+                      final bytes = await file.readAsBytes();
+                      if (context.mounted) {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => AddDrinkView(initialImageBytes: bytes),
+                          ),
+                        );
+                      }
+                    }
+                  },
+                ),
+
+                const SizedBox(height: 8),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
 }
 
 // Data holder class for stats items
@@ -832,4 +963,49 @@ class _StatItem {
     required this.subtitle,
     required this.color,
   });
+}
+
+// Bottom sheet option row widget
+class _SheetOption extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  const _SheetOption({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        decoration: BoxDecoration(
+          color: AppTheme.surfaceColor,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: AppTheme.borderLight),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: AppTheme.accentGold, size: 24),
+            const SizedBox(width: 16),
+            Text(
+              label,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: AppTheme.textPrimary,
+              ),
+            ),
+            const Spacer(),
+            const Icon(Icons.chevron_right, color: AppTheme.textSecondary, size: 20),
+          ],
+        ),
+      ),
+    );
+  }
 }
