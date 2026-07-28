@@ -227,7 +227,7 @@ class _BatchAddDrinkViewState extends State<BatchAddDrinkView> with SingleTicker
     });
 
     try {
-      final abv = double.tryParse(_abvController.text) ?? 0.0;
+      final abv = double.tryParse(_abvController.text.replaceAll(',', '.')) ?? 0.0;
 
       final newDrink = DrinkModel(
         id: DateTime.now().microsecondsSinceEpoch.toString(),
@@ -478,8 +478,11 @@ class _BatchAddDrinkViewState extends State<BatchAddDrinkView> with SingleTicker
                                               decoration: const InputDecoration(labelText: 'ABV (%)', hintText: '5.0'),
                                               keyboardType: const TextInputType.numberWithOptions(decimal: true),
                                               validator: (v) {
-                                                if (v != null && v.isNotEmpty && double.tryParse(v) == null) {
-                                                  return 'Fel format';
+                                                if (v != null && v.isNotEmpty) {
+                                                  final cleanVal = v.replaceAll(',', '.');
+                                                  if (double.tryParse(cleanVal) == null) {
+                                                    return 'Fel format';
+                                                  }
                                                 }
                                                 return null;
                                               },

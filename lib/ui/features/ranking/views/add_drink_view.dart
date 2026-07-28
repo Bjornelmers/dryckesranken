@@ -307,7 +307,7 @@ class _AddDrinkViewState extends State<AddDrinkView> with SingleTickerProviderSt
     });
 
     try {
-      final abv = double.tryParse(_abvController.text) ?? 0.0;
+      final abv = double.tryParse(_abvController.text.replaceAll(',', '.')) ?? 0.0;
       
       final isEditing = widget.drinkToEdit != null;
       final drink = DrinkModel(
@@ -600,8 +600,11 @@ class _AddDrinkViewState extends State<AddDrinkView> with SingleTickerProviderSt
                                         decoration: const InputDecoration(labelText: 'ABV (%)', hintText: '5.0'),
                                         keyboardType: const TextInputType.numberWithOptions(decimal: true),
                                         validator: (v) {
-                                          if (v != null && v.isNotEmpty && double.tryParse(v) == null) {
-                                            return 'Fel format';
+                                          if (v != null && v.isNotEmpty) {
+                                            final cleanVal = v.replaceAll(',', '.');
+                                            if (double.tryParse(cleanVal) == null) {
+                                              return 'Fel format';
+                                            }
                                           }
                                           return null;
                                         },
