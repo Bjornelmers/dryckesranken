@@ -281,7 +281,16 @@ class DashboardView extends StatelessWidget {
         },
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _showAddOptions(context),
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const AddDrinkView(
+                initialSource: ImageSource.gallery,
+              ),
+            ),
+          );
+        },
         icon: const Icon(Icons.add),
         label: const Text(
           'Lägg till',
@@ -736,134 +745,7 @@ class DashboardView extends StatelessWidget {
     );
   }
 
-  void _showAddOptions(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (context) {
-        return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
-          decoration: const BoxDecoration(
-            color: AppTheme.surfaceColor,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-            border: Border(top: BorderSide(color: AppTheme.borderLight, width: 1.5)),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Lägg till dryck',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: AppTheme.textPrimary,
-                ),
-              ),
-              const SizedBox(height: 16),
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: AppTheme.accentGold.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Icon(Icons.auto_awesome, color: AppTheme.accentGold),
-                ),
-                title: const Text('Skanna med AI', style: TextStyle(fontWeight: FontWeight.bold, color: AppTheme.textPrimary)),
-                subtitle: const Text('Kamera eller galleri – Gemini läser av etiketten automatiskt', style: TextStyle(fontSize: 12, color: AppTheme.textSecondary)),
-                trailing: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.photo_camera, color: AppTheme.accentGold),
-                      onPressed: () {
-                        Navigator.pop(context);
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const AddDrinkView(
-                              initialSource: ImageSource.camera,
-                              skipScan: false,
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.photo_library, color: AppTheme.accentGold),
-                      onPressed: () {
-                        Navigator.pop(context);
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const AddDrinkView(
-                              initialSource: ImageSource.gallery,
-                              skipScan: false,
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ],
-                ),
-              ),
-              const Divider(color: AppTheme.borderLight, height: 24),
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: AppTheme.accentPink.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Icon(Icons.edit, color: AppTheme.accentPink),
-                ),
-                title: const Text('Fyll i manuellt', style: TextStyle(fontWeight: FontWeight.bold, color: AppTheme.textPrimary)),
-                subtitle: const Text('Välj bild först men skippa AI-skanningen', style: TextStyle(fontSize: 12, color: AppTheme.textSecondary)),
-                trailing: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.photo_camera, color: AppTheme.accentPink),
-                      onPressed: () {
-                        Navigator.pop(context);
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const AddDrinkView(
-                              initialSource: ImageSource.camera,
-                              skipScan: true,
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.photo_library, color: AppTheme.accentPink),
-                      onPressed: () {
-                        Navigator.pop(context);
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const AddDrinkView(
-                              initialSource: ImageSource.gallery,
-                              skipScan: true,
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
+  
 
   Widget _buildCountryFilterChips(BuildContext context, AppViewModel viewModel) {
     final countries = viewModel.availableCountries;
