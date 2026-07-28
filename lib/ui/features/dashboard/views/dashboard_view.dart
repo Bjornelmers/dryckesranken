@@ -793,7 +793,6 @@ class DashboardView extends StatelessWidget {
   }
 
   
-
   Future<void> _handleLogin(BuildContext context, AppViewModel viewModel) async {
     try {
       await viewModel.signInWithGoogle();

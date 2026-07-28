@@ -16,6 +16,7 @@ class AddDrinkView extends StatefulWidget {
   final DrinkModel? prefillDrink;
   final ImageSource? initialSource;
   final bool skipScan;
+  final Uint8List? initialImageBytes;
 
   const AddDrinkView({
     super.key,
@@ -23,6 +24,7 @@ class AddDrinkView extends StatefulWidget {
     this.prefillDrink,
     this.initialSource,
     this.skipScan = false,
+    this.initialImageBytes,
   });
 
   @override
@@ -39,6 +41,7 @@ class _AddDrinkViewState extends State<AddDrinkView> with SingleTickerProviderSt
   bool _isScanning = false;
   bool _hasScanned = false;
   bool _isSaving = false;
+  bool _isAutoLaunching = false; // true while auto-triggering picker from initialSource
   String _errorMessage = '';
 
   // Scan result controllers
@@ -168,9 +171,18 @@ class _AddDrinkViewState extends State<AddDrinkView> with SingleTickerProviderSt
       _selectedMainCategory = 'Öl';
     }
 
-    if (widget.initialSource != null) {
+    if (widget.initialImageBytes != null) {
+      _imageBytes = widget.initialImageBytes;
+      _hasScanned = false;
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        _pickImage(widget.initialSource!);
+        _runLabelScan();
+      });
+    } else if (widget.initialSource != null) {
+      _isAutoLaunching = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _pickImage(widget.initialSource!).whenComplete(() {
+          if (mounted) setState(() => _isAutoLaunching = false);
+        });
       });
     }
   }
@@ -219,6 +231,9 @@ class _AddDrinkViewState extends State<AddDrinkView> with SingleTickerProviderSt
           });
           _runLabelScan();
         }
+      } else if (_isAutoLaunching && mounted) {
+        // User cancelled picker that was auto-launched — go back to Dashboard
+        Navigator.of(context).pop();
       }
     } catch (e) {
       setState(() {
@@ -889,6 +904,20 @@ class _AddDrinkViewState extends State<AddDrinkView> with SingleTickerProviderSt
                 child: Image.memory(
                   _imageBytes!,
                   fit: BoxFit.cover,
+                ),
+              )
+            else if (_isAutoLaunching)
+              Positioned.fill(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: const [
+                    CircularProgressIndicator(),
+                    SizedBox(height: 16),
+                    Text(
+                      'Öppnar bildväljare...',
+                      style: TextStyle(color: AppTheme.textSecondary, fontSize: 14),
+                    ),
+                  ],
                 ),
               )
             else
