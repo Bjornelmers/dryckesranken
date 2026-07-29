@@ -402,10 +402,14 @@ class AppViewModel extends ChangeNotifier {
   }
 
   // Wrapper for AI Scanning
-  Future<Map<String, dynamic>> scanDrink(Uint8List imageBytes) async {
+  Future<Map<String, dynamic>> scanDrink(
+    Uint8List imageBytes, {
+    void Function(String)? onStatusUpdate,
+  }) async {
     return await _geminiService.scanDrinkLabel(
       imageBytes: imageBytes,
       apiKey: _apiKey,
+      onStatusUpdate: onStatusUpdate,
     );
   }
 

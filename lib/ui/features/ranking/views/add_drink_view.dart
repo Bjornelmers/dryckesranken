@@ -40,6 +40,7 @@ class _AddDrinkViewState extends State<AddDrinkView> with SingleTickerProviderSt
   }
   bool _isScanning = false;
   bool _hasScanned = false;
+  String _scanStatus = '';
   bool _isSaving = false;
   bool _isAutoLaunching = false; // true while auto-triggering picker from initialSource
   String _errorMessage = '';
@@ -248,13 +249,19 @@ class _AddDrinkViewState extends State<AddDrinkView> with SingleTickerProviderSt
 
     setState(() {
       _isScanning = true;
+      _scanStatus = 'Analyserar etiketten…';
       _errorMessage = '';
     });
     _animationController.forward();
 
     try {
       final viewModel = Provider.of<AppViewModel>(context, listen: false);
-      final result = await viewModel.scanDrink(_imageBytes!);
+      final result = await viewModel.scanDrink(
+        _imageBytes!,
+        onStatusUpdate: (msg) {
+          if (mounted) setState(() => _scanStatus = msg);
+        },
+      );
 
       setState(() {
         _nameController.text = result['name'] ?? '';
@@ -298,11 +305,13 @@ class _AddDrinkViewState extends State<AddDrinkView> with SingleTickerProviderSt
         }
 
         _isScanning = false;
+        _scanStatus = '';
         _hasScanned = true;
       });
     } catch (e) {
       setState(() {
         _isScanning = false;
+        _scanStatus = '';
         _errorMessage = e.toString().replaceAll('Exception: ', '');
       });
     } finally {
@@ -1011,6 +1020,33 @@ class _AddDrinkViewState extends State<AddDrinkView> with SingleTickerProviderSt
                           ),
                         ),
                       ),
+                      // Status text at bottom of overlay
+                      if (_scanStatus.isNotEmpty)
+                        Positioned(
+                          bottom: 20,
+                          left: 0,
+                          right: 0,
+                          child: Center(
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 8,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.black.withOpacity(0.65),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Text(
+                                _scanStatus,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
                     ],
                   );
                 },

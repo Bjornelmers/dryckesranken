@@ -3,21 +3,75 @@ import 'dart:typed_data';
 import 'package:google_generative_ai/google_generative_ai.dart';
 
 class GeminiService {
+  static const _primaryModel = 'gemini-2.5-flash';
+  static const _fallbackModel = 'gemini-1.5-flash';
+
   // Scans the drink label from the image bytes.
   // If apiKey is null/empty, it runs in simulated demo mode.
+  // onStatusUpdate is called with a Swedish status message at each retry step.
   Future<Map<String, dynamic>> scanDrinkLabel({
     required Uint8List imageBytes,
     required String? apiKey,
+    void Function(String)? onStatusUpdate,
   }) async {
     if (apiKey == null || apiKey.trim().isEmpty) {
       // Run in demo mode with simulated delay
+      onStatusUpdate?.call('Analyserar etiketten…');
       await Future.delayed(const Duration(seconds: 2));
       return _generateMockScanResult();
     }
 
+    final attempts = [
+      (model: _primaryModel, status: 'Analyserar etiketten…'),
+      (model: _primaryModel, status: 'Försöker igen…'),
+      (model: _fallbackModel, status: 'Provar med reservmodell…'),
+    ];
+
+    Exception? lastError;
+
+    for (var i = 0; i < attempts.length; i++) {
+      final attempt = attempts[i];
+      onStatusUpdate?.call(attempt.status);
+
+      if (i > 0) {
+        await Future.delayed(const Duration(seconds: 1));
+      }
+
+      try {
+        final result = await _callGemini(
+          imageBytes: imageBytes,
+          apiKey: apiKey,
+          modelName: attempt.model,
+        );
+        return result;
+      } catch (e) {
+        lastError = e is Exception ? e : Exception(e.toString());
+        // Only retry on rate-limit or server errors, not on parse errors
+        final msg = e.toString().toLowerCase();
+        final isRetryable = msg.contains('429') ||
+            msg.contains('quota') ||
+            msg.contains('resource_exhausted') ||
+            msg.contains('503') ||
+            msg.contains('unavailable') ||
+            msg.contains('socketerror') ||
+            msg.contains('connection');
+        if (!isRetryable) break;
+      }
+    }
+
+    throw lastError ??
+        Exception('Det gick inte att läsa av etiketten.');
+  }
+
+  // Internal single-attempt call to a specific Gemini model.
+  Future<Map<String, dynamic>> _callGemini({
+    required Uint8List imageBytes,
+    required String apiKey,
+    required String modelName,
+  }) async {
     try {
       final model = GenerativeModel(
-        model: 'gemini-3.5-flash',
+        model: modelName,
         apiKey: apiKey,
         generationConfig: GenerationConfig(
           responseMimeType: 'application/json',

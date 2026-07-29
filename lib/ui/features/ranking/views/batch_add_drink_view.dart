@@ -23,6 +23,7 @@ class _BatchAddDrinkViewState extends State<BatchAddDrinkView> with SingleTicker
   bool _isScanning = false;
   bool _hasScanned = false;
   bool _isSaving = false;
+  String _scanStatus = '';
   String _errorMessage = '';
 
   // Scan result controllers
@@ -135,6 +136,7 @@ class _BatchAddDrinkViewState extends State<BatchAddDrinkView> with SingleTicker
 
     setState(() {
       _isScanning = true;
+      _scanStatus = 'Analyserar etiketten…';
       _hasScanned = false;
       _errorMessage = '';
       _nameController.clear();
@@ -157,7 +159,12 @@ class _BatchAddDrinkViewState extends State<BatchAddDrinkView> with SingleTicker
 
       _animationController.forward();
 
-      final result = await viewModel.scanDrink(bytes);
+      final result = await viewModel.scanDrink(
+        bytes,
+        onStatusUpdate: (msg) {
+          if (mounted) setState(() => _scanStatus = msg);
+        },
+      );
 
       setState(() {
         _nameController.text = result['name'] ?? '';
@@ -201,11 +208,13 @@ class _BatchAddDrinkViewState extends State<BatchAddDrinkView> with SingleTicker
         }
 
         _isScanning = false;
+        _scanStatus = '';
         _hasScanned = true;
       });
     } catch (e) {
       setState(() {
         _isScanning = false;
+        _scanStatus = '';
         _errorMessage = e.toString().replaceAll('Exception: ', '');
         // Allow user to manually input details even if scan fails
         _hasScanned = true;
@@ -720,6 +729,33 @@ class _BatchAddDrinkViewState extends State<BatchAddDrinkView> with SingleTicker
                           ),
                         ),
                       ),
+                      // Status text at bottom of overlay
+                      if (_scanStatus.isNotEmpty)
+                        Positioned(
+                          bottom: 20,
+                          left: 0,
+                          right: 0,
+                          child: Center(
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 8,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.black.withOpacity(0.65),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Text(
+                                _scanStatus,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
                     ],
                   );
                 },
