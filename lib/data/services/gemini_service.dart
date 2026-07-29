@@ -85,12 +85,13 @@ Identify the drink details and return them strictly in the following JSON format
   "name": "Name of the drink (e.g., Punk IPA, Coca Cola Zero)",
   "brand": "Brand or brewery/producer (e.g., BrewDog, Coca-Cola)",
   "mainCategory": "Choose exactly one from this list: Öl, Vin, Sprit, Cider, Likör, Alkoholfritt, Övrigt",
-  "type": "Specific subcategory or style (e.g., IPA, Lager, Stout, Rött vin, Vitt vin, Gin, Rom, Bourbon)",
+  "type": "Specific subcategory or style in Swedish (e.g., IPA, Lager, Stout, Rött vin, Vitt vin, Gin, Rom, Bourbon)",
   "abv": 5.4, // Alcohol by volume (ABV) as a double. Use 0.0 for non-alcoholic.
-  "country": "Country of origin if visible or known (e.g., Sweden, Belgium, USA). Return empty string if unknown.",
-  "description": "A brief 1-2 sentence description of the drink style or flavor profile extracted or inferred from the label."
+  "country": "Country of origin in Swedish (e.g., Sverige, Danmark, Belgien, USA, Storbritannien). Return empty string if unknown.",
+  "description": "A brief 1-2 sentence description in Swedish of the drink style or flavor profile extracted or inferred from the label."
 }
 Make sure the returned text is a single valid JSON object.
+IMPORTANT: All textual output (especially 'type', 'country' and 'description') MUST be in Swedish.
 IMPORTANT: If you use double quotes inside string values (like in the description or name), you must escape them using backslashes, e.g. \"quotes\".
 ''';
 
