@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'dart:html' as html;
+import 'dart:js' as js;
 import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -33,6 +34,7 @@ class AddDrinkView extends StatefulWidget {
 
 class _AddDrinkViewState extends State<AddDrinkView> with SingleTickerProviderStateMixin {
   Uint8List? _imageBytes;
+  ImageSource? _lastImageSource;
   
   bool get _isMobile {
     return defaultTargetPlatform == TargetPlatform.iOS ||
@@ -119,6 +121,26 @@ class _AddDrinkViewState extends State<AddDrinkView> with SingleTickerProviderSt
   @override
   void initState() {
     super.initState();
+    
+    // Register JS helper for sharing if on web
+    try {
+      js.context.callMethod('eval', [
+        '''
+        window.shareDrinkFile = function(file) {
+          if (!navigator.share) {
+            throw new Error("navigator.share is not supported");
+          }
+          return navigator.share({
+            files: [file],
+            title: "Spara bild"
+          });
+        }
+        '''
+      ]);
+    } catch (_) {
+      // Ignore if context not available
+    }
+
     _animationController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 2),
@@ -180,6 +202,7 @@ class _AddDrinkViewState extends State<AddDrinkView> with SingleTickerProviderSt
       });
     } else if (widget.initialSource != null) {
       _isAutoLaunching = true;
+      _lastImageSource = widget.initialSource;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _pickImage(widget.initialSource!).whenComplete(() {
           if (mounted) setState(() => _isAutoLaunching = false);
@@ -207,6 +230,7 @@ class _AddDrinkViewState extends State<AddDrinkView> with SingleTickerProviderSt
   Future<void> _pickImage(ImageSource source) async {
     setState(() {
       _errorMessage = '';
+      _lastImageSource = source;
     });
     
     try {
@@ -240,6 +264,46 @@ class _AddDrinkViewState extends State<AddDrinkView> with SingleTickerProviderSt
       setState(() {
         _errorMessage = 'Det gick inte att välja bild: $e';
       });
+    }
+  }
+
+  // Save/Share captured photo to local storage/gallery
+  Future<void> _saveImageToGallery() async {
+    if (_imageBytes == null) return;
+    
+    try {
+      final blob = html.Blob([_imageBytes!], 'image/jpeg');
+      final fileName = 'dryck_${DateTime.now().millisecondsSinceEpoch}.jpg';
+      final file = html.File([blob], fileName, {'type': 'image/jpeg'});
+
+      // Call the JS function shareDrinkFile registered in initState
+      js.context.callMethod('shareDrinkFile', [file]);
+    } catch (e) {
+      // Fallback: download file
+      try {
+        final blob = html.Blob([_imageBytes!]);
+        final url = html.Url.createObjectUrlFromBlob(blob);
+        final anchor = html.document.createElement('a') as html.AnchorElement
+          ..href = url
+          ..download = 'dryck_${DateTime.now().millisecondsSinceEpoch}.jpg';
+        html.document.body?.children.add(anchor);
+        anchor.click();
+        html.document.body?.children.remove(anchor);
+        html.Url.revokeObjectUrl(url);
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Delning stöds inte på denna enhet. Bilden sparas i dina hämtade filer.'),
+              backgroundColor: AppTheme.surfaceCardColor,
+            ),
+          );
+        }
+      } catch (err) {
+        setState(() {
+          _errorMessage = 'Det gick inte att spara bilden: $e';
+        });
+      }
     }
   }
 
@@ -1050,6 +1114,35 @@ class _AddDrinkViewState extends State<AddDrinkView> with SingleTickerProviderSt
                     ],
                   );
                 },
+              ),
+
+            // Save to Library Button overlay
+            if (_imageBytes != null && !_isScanning && _lastImageSource == ImageSource.camera)
+              Positioned(
+                bottom: 12,
+                left: 12,
+                child: ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.black.withOpacity(0.65),
+                    foregroundColor: AppTheme.accentGold,
+                    side: BorderSide(color: AppTheme.accentGold.withOpacity(0.4), width: 1),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                  ),
+                  onPressed: _saveImageToGallery,
+                  icon: const Icon(Icons.save_alt, size: 16),
+                  label: const Text(
+                    'Spara i bildbiblioteket',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
               ),
 
             // Change Photo Button overlay
