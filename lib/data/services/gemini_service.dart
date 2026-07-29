@@ -3,8 +3,8 @@ import 'dart:typed_data';
 import 'package:google_generative_ai/google_generative_ai.dart';
 
 class GeminiService {
-  static const _primaryModel = 'gemini-2.5-flash';
-  static const _fallbackModel = 'gemini-1.5-flash';
+  static const _primaryModel = 'gemini-3.5-flash';
+  static const _fallbackModel = 'gemini-3.5-flash-lite';
 
   // Scans the drink label from the image bytes.
   // If apiKey is null/empty, it runs in simulated demo mode.
